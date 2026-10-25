@@ -6,7 +6,7 @@
 
 `Simulation.step(dt)` is framework-independent. `FixedLoop` runs it at 20 Hz with a bounded accumulator, eight maximum catch-up steps, and a floating-point tolerance at tick boundaries. Rendering speed cannot change harvesting or travel outcomes. Excess hidden-tab time is discarded rather than replayed. Unit tests compare 30 and 144 FPS host schedules.
 
-Each harvester owns a `HarvesterBehavior`. `Simulation` owns deterministic tick ordering and dispatches commands by entity ID. Both behaviors share the world, finite deposits, FIFO receiver, and economy. Each uses an explicit state machine:
+Each harvester owns a `HarvesterBehavior`. `Simulation` owns deterministic tick ordering and dispatches commands by entity ID. After applying commands, `MineralRegeneration` restores resting fields before the unit behaviors run. Both behaviors share the world, capacity-limited renewable deposits, FIFO receiver, and economy. Each uses an explicit state machine:
 
 ```text
 IDLE → FIND_RESOURCE → MOVE_TO_RESOURCE → HARVEST → CARGO_FULL
@@ -16,13 +16,13 @@ IDLE → FIND_RESOURCE → MOVE_TO_RESOURCE → HARVEST → CARGO_FULL
                       FIND_RESOURCE ← LEAVE_REFINERY ← UNDOCK ← UNLOAD ← DOCK
 ```
 
-Missing resources, unavailable refineries, and inaccessible docks produce bounded retries with cargo retained. Paths are checked before each movement step. A changed path triggers replanning. Resource transfer preserves the sum of remaining deposits, cargo, and stored minerals. A full-map fleet test checks conservation, unit separation, a single active unloading unit, and completion for both harvesters.
+Missing resources, unavailable refineries, and inaccessible docks produce bounded retries with cargo retained. Autonomous units wait for a configured useful reserve, then resume when a field recovers. Paths are checked before each movement step. A changed path triggers replanning. Resource transfer preserves the sum of remaining deposits, cargo, and stored minerals, with actual regrowth tracked in `World.regenerated`. The conserved total equals initial reserves plus regenerated minerals. A full-map fleet test with regrowth disabled checks finite completion; renewable-map tests cover repeated deliveries from a completely exhausted map, conservation, and unit separation.
 
 ## Navigation and terrain
 
 The visible terrain and navigation metadata are generated together in Blender from `assets/world.json`. `Grid.heightAt` uses barycentric sampling of exactly the exported mesh's two triangles per cell. `assets:check` compares every navigation vertex against its actual optimized GLB position.
 
-Grid cells expose terrain height, movement cost, buildability, walkability, and occupancy. Layered occupancy preserves a rock when an overlapping deposit disappears and restores original terrain restrictions on release. The refinery reserves a 6 × 5 footprint; its dock is a separate, walkable cell outside that footprint. Rock footprints include a conservative clearance margin.
+Grid cells expose terrain height, movement cost, buildability, walkability, and occupancy. Layered occupancy preserves a rock when an overlapping finite deposit disappears and restores original terrain restrictions on release. Renewable deposits keep their footprint while empty, preventing regrowth under a vehicle or inside an active route. The refinery reserves a 6 × 5 footprint; its dock is a separate, walkable cell outside that footprint. Rock footprints include a conservative clearance margin.
 
 A* uses a binary min-heap, deterministic neighbor order and tie-breaking, movement costs, optional diagonals, and no diagonal corner-cutting. It returns `null` for invalid or unreachable goals and an empty path when already at the goal. Mining approaches are chosen outside deposit occupancy and within extraction range. Routes also avoid the other unit and the reserved dock corridor. A first-step predicate checks the continuous segment from an off-center unit position after replanning, preventing nose-to-nose deadlocks. Nearby units yield and replan; occupied mining approach positions are kept separate. `NavigationService` is the replacement boundary for future navigation methods.
 
@@ -38,7 +38,7 @@ The browser host owns requestAnimationFrame scheduling in `GameRuntime.start`. I
 
 R3F `useFrame` callbacks interpolate previous/current simulation positions and headings, align the vehicle with terrain, animate imported model components, move authored particles, and control the camera. React does not rerender units every frame. GLB hierarchies are cloned per entity while geometries and materials stay shared. Particles use instancing. Cached model resources are not disposed by individual instances; temporary debug geometry is explicitly disposed.
 
-World labels use one DOM overlay; `LabelProjection` updates its element transforms from the camera and interpolated unit positions without per-frame React state or additional React roots. Mineral geometry retains seven named Blender prisms. They shorten and disappear sequentially as the remaining amount decreases; the HUD snapshot provides percentage/grade indicators.
+World labels use one DOM overlay; `LabelProjection` updates its element transforms from the camera and interpolated unit positions without per-frame React state or additional React roots. Mineral geometry retains seven named Blender prisms. They shorten and disappear sequentially as the remaining amount decreases, then grow back as it recovers; the HUD snapshot provides percentage, grade, and regrowth indicators.
 
 Postprocessing combines fine temporal noise, radially modulated chromatic separation, and a subtle vignette. Settings can be changed or disabled without affecting gameplay. The orthographic camera controller owns bounds, zoom, keyboard state, drag input, and smoothing independently of entities.
 

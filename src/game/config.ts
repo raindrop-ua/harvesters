@@ -1,6 +1,10 @@
 export const config = {
   tickRate: 20,
   maxCatchUpSteps: 8,
+  minerals: {
+    regenerationRate: 0.2, // 12 M per simulation minute per resting field.
+    minimumDispatchAmount: 24,
+  },
   harvester: {
     capacity: 120,
     harvestRate: 16,
@@ -36,3 +40,4 @@ export const config = {
 } as const
 
 export type HarvesterConfig = { [K in keyof typeof config.harvester]: number }
+export type MineralConfig = { [K in keyof typeof config.minerals]: number }

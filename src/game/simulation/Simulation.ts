@@ -2,6 +2,7 @@ import { CommandBus } from '../commands/CommandBus'
 import type { CommandResult, UnitCommand } from '../types'
 import { HarvesterBehavior } from './HarvesterBehavior'
 import { World } from './World'
+import { regenerateMinerals } from './MineralRegeneration'
 
 export { angleDelta } from './HarvesterBehavior'
 
@@ -54,6 +55,7 @@ export class Simulation {
         .find((b) => b.unit.id === command.unitId)
         ?.execute(command),
     )
+    regenerateMinerals(this.world, dt)
     for (const behavior of this.behaviors) behavior.step(dt)
   }
 }

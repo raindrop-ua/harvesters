@@ -56,8 +56,13 @@ describe('two harvesters and one refinery', () => {
     advanceUntil(sim, () => b.deliveries === 1)
     expect(w.economy.balances.mineral).toBeCloseTo(a.capacity + b.capacity)
   })
-  it('automatically completes both units’ shifts without overlap or resource loss', () => {
-    const sim = new Simulation(),
+  it('completes a finite shift with regeneration disabled, without overlap or resource loss', () => {
+    const sim = new Simulation(
+        new World(undefined, undefined, {
+          ...config.minerals,
+          regenerationRate: 0,
+        }),
+      ),
       w = sim.world
     const total = w.deposits.reduce((sum, d) => sum + d.amount, 0)
     const states = new Set<HarvesterState>()

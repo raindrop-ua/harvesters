@@ -2,7 +2,7 @@
 
 A small crew. A vast desert.
 
-A playable desert RTS vertical slice: two autonomous tracked harvesters, one shared refinery, five finite cyan mineral deposits, and an editable Blender-authored world. Each harvester finds resources, follows A* routes, mines, waits its turn, aligns nose first at one unloading point, unloads, and drives clear before the next unit enters. Deposits lose individual Blender-authored crystals as they are depleted, with percentage and grade indicators.
+A playable desert RTS vertical slice: two autonomous tracked harvesters, one shared refinery, five slowly regenerating cyan mineral deposits, and an editable Blender-authored world. Each harvester finds resources, follows A* routes, mines, waits its turn, aligns nose first at one unloading point, unloads, and drives clear before the next unit enters. Deposits lose individual Blender-authored crystals as they are depleted and grow them back as they recover, with percentage, grade, and regrowth indicators.
 
 ## Run
 
@@ -38,6 +38,8 @@ The simulation starts when assets are ready and pauses in hidden tabs. The camer
 Selecting a harvester plays one of four random **“Yes sir!”** acknowledgements, without consecutive repeats or overlapping voices. The initial selection stays silent. The supplied ElevenLabs MP3s are grouped under `public/audio/voices/harvester/selection/`.
 
 Seven background tracks play in order and repeat the playlist, starting with your first action. The **FIELD RADIO** panel offers Play/Pause, Next, volume, and song selection. Music defaults to 25% volume and pauses in hidden tabs. Named assets live in `public/audio/music/`; see [game audio](docs/audio.md) for titles, source mappings, and playback behavior.
+
+Resting mineral fields regenerate **12 M per simulation minute**, up to their original capacity. Autonomous harvesters wait for **24 M** before setting out again, then resume without player input. Regeneration freezes with the simulation and follows its speed setting. Rates and dispatch reserve are configurable in `src/game/config.ts`.
 
 ## Development
 
@@ -92,10 +94,10 @@ docs/                   Specification, architecture, asset workflow, validation 
 
 Gameplay tuning lives in `src/game/config.ts`. Grid dimensions and scene layout live in `assets/world.json`; regenerate assets after changing map dimensions. The default navigation grid is 64 × 64 at 2 m per cell. Terrain triangles and navigation share one exported heightfield.
 
-See [fleet, docking, and depletion](docs/fleet-and-docking.md), [architecture and extension points](docs/architecture.md), [validation](docs/validation.md), and the [original specification](docs/specification.md).
+See [fleet, docking, and mineral regrowth](docs/fleet-and-docking.md), [architecture and extension points](docs/architecture.md), [validation](docs/validation.md), and the [original specification](docs/specification.md).
 
 ## Scope and limits
 
-This is a two-unit, one-building desktop browser prototype. All 3,660 minerals are finite; after mining and delivering everything, both harvesters safely idle. Reload to start a new shift. There is no combat, construction, save/load, or physics. The refinery uses a FIFO queue with distinct waiting bays, a reserved approach, fixed unloading pose, and reverse departure. Nearby units yield and replan with clearance; this is not a general crowd-navigation system. Holding a unit inside the port intentionally keeps the dock occupied until that unit resumes or drives clear.
+This is a two-unit, one-building desktop browser prototype. The map starts with 3,660 minerals; slow regrowth provides continued income after the initial reserves run down. Reload to start a new shift. There is no combat, construction, save/load, or physics. The refinery uses a FIFO queue with distinct waiting bays, a reserved approach, fixed unloading pose, and reverse departure. Nearby units yield and replan with clearance; this is not a general crowd-navigation system. Holding a unit inside the port intentionally keeps the dock occupied until that unit resumes or drives clear.
 
 Portrait layouts and touch panning are supported, but multi-touch pinch zoom and full mobile controls are not implemented. Performance has been smoke-tested in Chromium; cross-browser and large-fleet performance are not yet benchmarked. The Three.js production chunk exceeds Vite's default 500 KB warning threshold; the canvas code is lazy-loaded separately from the HUD.
