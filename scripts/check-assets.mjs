@@ -1,10 +1,42 @@
 import { readFileSync, existsSync } from 'node:fs'
 import assert from 'node:assert/strict'
+import { Box3, Matrix4, Quaternion, Vector3 } from 'three'
+
+function sceneBounds(json) {
+  const bounds = new Box3()
+  const visit = (index, parent) => {
+    const node = json.nodes[index]
+    const local = node.matrix
+      ? new Matrix4().fromArray(node.matrix)
+      : new Matrix4().compose(
+          new Vector3().fromArray(node.translation ?? [0, 0, 0]),
+          new Quaternion().fromArray(node.rotation ?? [0, 0, 0, 1]),
+          new Vector3().fromArray(node.scale ?? [1, 1, 1]),
+        )
+    const world = new Matrix4().multiplyMatrices(parent, local)
+    if (node.mesh !== undefined)
+      for (const primitive of json.meshes[node.mesh].primitives) {
+        const position = json.accessors[primitive.attributes.POSITION]
+        bounds.union(
+          new Box3(
+            new Vector3().fromArray(position.min),
+            new Vector3().fromArray(position.max),
+          ).applyMatrix4(world),
+        )
+      }
+    for (const child of node.children ?? []) visit(child, world)
+  }
+  for (const root of json.scenes[json.scene ?? 0].nodes)
+    visit(root, new Matrix4())
+  return bounds
+}
 
 const names = [
   'terrain',
   'harvester',
   'refinery',
+  'courtyard',
+  'smoke',
   'minerals',
   'rocks',
   'effects',
@@ -24,6 +56,34 @@ for (const name of names) {
     `${name} must be exported by Blender`,
   )
   assert(json.meshes.length > 0)
+  const required = {
+    refinery: ['ProcessingStructure', 'DockStatusLight', 'SmokeOutlet'],
+    courtyard: [
+      'CourtyardStructure',
+      'GantryCrane',
+      'SupplyStacks',
+      'CommandAntenna',
+    ],
+    smoke: ['SmokeParticle'],
+  }
+  for (const node of required[name] ?? [])
+    assert(
+      json.nodes.some((n) => n.name === node),
+      `${name}: missing ${node}`,
+    )
+  if (name === 'courtyard') {
+    const { courtyard, cellSize } = JSON.parse(
+      readFileSync('assets/world.json', 'utf8'),
+    )
+    const bounds = sceneBounds(json)
+    assert(
+      bounds.min.x >= (-courtyard.width * cellSize) / 2 &&
+        bounds.max.x <= (courtyard.width * cellSize) / 2 &&
+        bounds.min.z >= (-courtyard.depth * cellSize) / 2 &&
+        bounds.max.z <= (courtyard.depth * cellSize) / 2,
+      'Courtyard geometry must fit its reserved navigation footprint',
+    )
+  }
   if (name === 'minerals') {
     for (let i = 0; i < 7; i++) {
       const node = `Crystal${String(i).padStart(2, '0')}`

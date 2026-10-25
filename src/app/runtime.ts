@@ -69,7 +69,7 @@ export class GameRuntime {
     paused: false,
     speed: 1,
     effects: { ...config.effects },
-    focus: { x: -1, z: 1, revision: 0 },
+    focus: { ...config.camera.initialFocus, revision: 0 },
     view: this.snapshot(60),
   }))
   get world() {

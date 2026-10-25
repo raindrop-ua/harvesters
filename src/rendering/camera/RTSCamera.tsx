@@ -18,8 +18,19 @@ const forward = new Vector3(-Math.sin(azimuth), 0, -Math.cos(azimuth))
 export function RTSCamera() {
   const game = useGame()
   const { camera, gl, size } = useThree()
-  const target = useRef(new Vector3(-1, 0, 1))
-  const current = useRef(new Vector3(-1, 0, 1))
+  const initialFocus =
+    size.width < 750
+      ? {
+          x:
+            (game.world.refineryPosition.x + game.world.courtyardPosition.x) /
+            2,
+          z:
+            (game.world.refineryPosition.z + game.world.courtyardPosition.z) /
+            2,
+        }
+      : settings.initialFocus
+  const target = useRef(new Vector3(initialFocus.x, 0, initialFocus.z))
+  const current = useRef(new Vector3(initialFocus.x, 0, initialFocus.z))
   const zoom = useRef<number>(settings.initialZoom)
   const keys = useRef(new Set<string>())
 

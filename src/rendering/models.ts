@@ -5,6 +5,8 @@ import { Mesh } from 'three'
 export const MODEL_URLS = [
   'terrain',
   'refinery',
+  'courtyard',
+  'smoke',
   'harvester',
   'minerals',
   'rocks',

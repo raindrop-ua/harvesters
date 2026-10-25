@@ -10,12 +10,13 @@ Validated locally with Node 24.18.0, Blender 5.2.3 LTS, React 19.3.1, R3F 9.8.2,
 - Strict TypeScript type checking.
 - ESLint.
 - Simulation/rendering import boundaries and Blender-only world-geometry guard.
-- **54 Node-only tests**, including grid conversions, exact triangle heights, overlapping occupancy, A* obstacles/costs/unreachable goals, all harvesting states, capacity, partial-load depletion, mineral regeneration, economy conservation, missing refineries, blocked docks, invalidated paths, commands, dock reservations, FPS-independent scheduling, bounded catch-up, harvester suspension, selection voice playback, and background music.
+- **60 Node-only tests**, including grid conversions, exact triangle heights, overlapping occupancy, A* obstacles/costs/unreachable goals, construction-yard occupancy and passage traversal, all harvesting states, capacity, partial-load depletion, mineral regeneration, economy conservation, missing refineries, blocked docks, invalidated paths, commands, dock reservations, FPS-independent scheduling, bounded catch-up, harvester suspension, smoke lifecycle, selection voice playback, and background music.
 - Music coverage includes all seven local MP3 assets, ordered playback and wraparound, initial activation, pause intent, hidden-tab resume, track selection, stale play promises, blocked playback retry, bounded failure handling, volume, and cleanup.
 - With regeneration disabled, a full-map fleet simulation mines and delivers all **3,660 minerals**, then both units idle with no resource loss or overlapping centers.
 - Regeneration tests cover 12 M/min per resting field, original-capacity limits, no growth during harvesting, dispatch reserve, automatic repeated deliveries after total exhaustion, conserved initial + regenerated resources, unchanged navigation reservations, Hold/Autopilot, small-capacity fields, pause, speed, and identical 30/144 FPS results.
 - Presentation motion tests cover signed forward/reverse travel at four headings, acceleration/braking pitch, reverse symmetry, restrained peaks, settling, 30/144 FPS response, pause, and bounded integration after a large frame gap.
-- GLB structure, required animation nodes, Blender provenance, and all **4,225 terrain vertex heights** match navigation data.
+- Base tests verify the 56-cell courtyard footprint, eight-meter passage, rejection of MOVE orders into the yard, and an actual vehicle trip through the passage. Smoke tests cover activation, bounded pooling, no extra emission on frozen timestamps, stop/drain, repeated activation, and no burst after a long clock gap.
+- All eight GLBs pass structure, required-node and Blender-provenance checks. Courtyard geometry fits its reserved footprint, and all **4,225 terrain vertex heights** match navigation data.
 - Production build.
 
 `npm install` reported **0 dependency vulnerabilities** after updating Vitest to a patched release. This is a dependency advisory check, not an application security audit.
@@ -49,6 +50,12 @@ The built application was also served with `npm run preview -- --port 4173`. It 
 The music update was additionally checked in the production preview: no playback before interaction, successful MP3 decoding at 25% volume, direct selection of the seventh track, native end-of-track wraparound to the first, and working Pause. No console errors were recorded. All seven built MP3 files match their source assets byte for byte.
 
 Screenshots from the local run are stored under ignored `artifacts/`, including the desktop scene, portrait scene, and navigation grid. They are local evidence rather than source assets.
+
+Courtyard and refinery render together in the initial wide and portrait views. The yard has its own minimap marker and world label, and the page has no horizontal overflow at 390 px. A harvester visibly traversed the passage from world (-25, -9) to (-25, 11).
+
+Real unloading produced smoke at the authored chimney outlet (-20.1, 8.77, -10). Pausing froze puff transforms and opacity exactly. After unloading, existing puffs remained briefly and then all dissipated; no smoke was visible in the initial idle state. Refinery mesh positions, normals, and triangle indices match the pre-upgrade GLB exactly. Local screenshots include `artifacts/courtyard-refinery-smoke.png`, `artifacts/courtyard-passage.png`, and `artifacts/courtyard-mobile.png`.
+
+The final production preview additionally served the courtyard, refinery, and smoke GLBs successfully, completed autonomous unloading with visible chimney smoke, and rendered both buildings in portrait after a fresh load. No console errors were recorded. The final smoke and portrait screenshots come from this production build without temporary instrumentation.
 
 ## Remaining limits
 

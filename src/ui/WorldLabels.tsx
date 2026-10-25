@@ -17,6 +17,15 @@ export function WorldLabels() {
       aria-hidden={!ready}
       style={{ visibility: ready ? 'visible' : 'hidden' }}
     >
+      <div
+        className="projected-label"
+        ref={(element) => attach('courtyard-01', element)}
+      >
+        <div className="building-world-label" data-testid="world-courtyard">
+          <span>CY—01 · COURTYARD</span>
+          <small>CONSTRUCTION YARD</small>
+        </div>
+      </div>
       {game.world.units.map((unit) => (
         <div
           key={unit.id}

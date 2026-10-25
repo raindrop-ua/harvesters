@@ -8,6 +8,7 @@ import {
   RockModel,
   MineralModel,
   RefineryModel,
+  CourtyardModel,
   HarvesterModel,
 } from './entities/WorldModels'
 import { RTSCamera } from './camera/RTSCamera'
@@ -69,6 +70,7 @@ export default function GameScene() {
           <MineralModel key={deposit.id} deposit={deposit} />
         ))}
         <RefineryModel />
+        <CourtyardModel />
         {game.world.units.map((unit) => (
           <group key={unit.id}>
             <HarvesterModel unit={unit} />
