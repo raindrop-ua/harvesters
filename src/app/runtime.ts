@@ -10,19 +10,19 @@ import type {
   EntityId,
   GridPosition,
   HarvesterState,
+  TankClass,
+  MapTarget,
   Position,
 } from '../game/types'
 
-export interface MapHover {
-  kind: 'ground' | 'blocked' | 'unit'
-  cell: GridPosition
-}
+export type MapHover = MapTarget
 export interface MoveFeedback {
   sequence: number
   unitId: EntityId
   position: Position
   accepted: boolean
   reason?: string
+  order?: 'MOVE' | 'HARVEST' | 'RETURN_CARGO'
 }
 
 export interface PostProcessingSettings {
@@ -31,16 +31,18 @@ export interface PostProcessingSettings {
   chromaticAberrationIntensity: number
   vignetteIntensity: number
 }
-export interface UnitView {
+interface CommonUnitView {
   id: EntityId
-  cargo: number
-  capacity: number
   state: HarvesterState
   message: string
   position: GridPosition
   path: GridPosition[]
-  deliveries: number
 }
+export type UnitView = CommonUnitView &
+  (
+    | { kind: 'harvester'; cargo: number; capacity: number; deliveries: number }
+    | { kind: 'tank'; tankClass: TankClass }
+  )
 export interface ViewSnapshot {
   time: number
   balance: number
@@ -103,15 +105,20 @@ export class GameRuntime {
       time: w.time,
       balance: w.economy.balances.mineral,
       deliveries: w.deliveries,
-      units: w.units.map((u) => ({
+      units: w.vehicles.map((u) => ({
         id: u.id,
-        cargo: u.cargo,
-        capacity: u.capacity,
+        ...(u.kind === 'harvester'
+          ? {
+              kind: u.kind,
+              cargo: u.cargo,
+              capacity: u.capacity,
+              deliveries: u.deliveries,
+            }
+          : { kind: u.kind, tankClass: u.tankClass }),
         state: u.state,
         message: u.message,
         position: { x: u.position.x, z: u.position.z },
         path: u.path.slice(u.pathIndex),
-        deliveries: u.deliveries,
       })),
       dockOwner: w.refinery?.reservedBy,
       queue: [...(w.refinery?.queue ?? [])],
@@ -182,12 +189,53 @@ export class GameRuntime {
     }
   }
   selectUnit(id: EntityId): void {
-    if (!this.world.units.some((unit) => unit.id === id)) return
+    if (!this.world.vehicles.some((unit) => unit.id === id)) return
     this.ui.setState({ selectedId: id, moveFeedback: null })
     this.voice.play('selection')
   }
-  hoverMap(kind: MapHover['kind'], point: GridPosition): void {
-    this.mapHover = { kind, cell: this.world.grid.worldToGrid(point) }
+  mapTarget(
+    kind: MapHover['kind'],
+    point: GridPosition,
+    id?: EntityId,
+  ): MapTarget {
+    const cell = this.world.grid.worldToGrid(point)
+    // Tiny/depleted crystals and holes between model parts still use their logical footprint.
+    const occupied =
+      kind === 'ground' ? this.world.grid.get(cell)?.occupiedBy : undefined
+    const deposit = this.world.deposits.find((d) => d.id === (id ?? occupied))
+    if (kind === 'deposit' || (kind === 'ground' && deposit))
+      return { kind: 'deposit', id: deposit?.id ?? id!, cell }
+    if (
+      kind === 'refinery' ||
+      (kind === 'ground' && occupied === this.world.refinery?.id && occupied)
+    )
+      return { kind: 'refinery', id: id ?? occupied!, cell }
+    return {
+      kind:
+        kind === 'unit' ? 'unit' : kind === 'blocked' ? 'blocked' : 'ground',
+      cell,
+    }
+  }
+  hoverMap(kind: MapHover['kind'], point: GridPosition, id?: EntityId): void {
+    this.mapHover = this.mapTarget(kind, point, id)
+  }
+  orderSelected(target: MapTarget, position: Position): CommandResult {
+    const { selectedId, ready } = this.ui.getState()
+    if (!selectedId || !ready)
+      return { accepted: false, reason: 'No unit selected' }
+    const command = this.simulation.mapOrder(selectedId, target)
+    const result = command
+      ? this.simulation.commands.enqueue(command)
+      : { accepted: false, reason: 'Destination blocked' }
+    this.showMoveFeedback(
+      position,
+      result,
+      command && command.type !== 'STOP' && command.type !== 'AUTO'
+        ? command.type
+        : undefined,
+    )
+    if (result.accepted) this.voice.play('move')
+    return result
   }
   moveSelected(destination: GridPosition): CommandResult {
     const { selectedId, ready } = this.ui.getState()
@@ -199,17 +247,19 @@ export class GameRuntime {
       destination,
     })
     if (Number.isFinite(destination.x) && Number.isFinite(destination.z))
-      this.showMoveFeedback(this.world.grid.gridToWorld(destination), result)
+      this.showMoveFeedback(
+        this.world.grid.gridToWorld(destination),
+        result,
+        'MOVE',
+      )
     if (result.accepted) this.voice.play('move')
     return result
   }
-  rejectMapMove(point: Position): void {
-    this.showMoveFeedback(point, {
-      accepted: false,
-      reason: 'Destination blocked',
-    })
-  }
-  private showMoveFeedback(position: Position, result: CommandResult): void {
+  private showMoveFeedback(
+    position: Position,
+    result: CommandResult,
+    order?: MoveFeedback['order'],
+  ): void {
     const { selectedId, ready } = this.ui.getState()
     if (!selectedId || !ready) return
     this.ui.setState({
@@ -218,13 +268,14 @@ export class GameRuntime {
         unitId: selectedId,
         position: { ...position },
         ...result,
+        order,
       },
     })
   }
   focusUnit(
     id = this.ui.getState().selectedId ?? this.world.units[0].id,
   ): void {
-    const u = this.world.units.find((unit) => unit.id === id)
+    const u = this.world.vehicles.find((unit) => unit.id === id)
     if (!u) return
     this.selectUnit(id)
     this.ui.setState((s) => ({

@@ -3,13 +3,13 @@ import { useFrame } from '@react-three/fiber'
 import { InstancedMesh, MathUtils, Mesh, Object3D } from 'three'
 import { useGame } from '../../app/GameContext'
 import { useModel } from '../models'
-import type { Harvester } from '../../game/types'
+import type { Vehicle } from '../../game/types'
 import { angleDelta } from '../../game/simulation/Simulation'
 import { localForwardSpeed } from '../entities/harvesterMotion'
 
 const COUNT = 22
 /** Both particle geometries come from effects.blend; instances only animate their transforms. */
-export function Particles({ unit }: { unit: Harvester }) {
+export function Particles({ unit }: { unit: Vehicle }) {
   const game = useGame(),
     model = useModel('effects')
   const dust = model.getObjectByName('DustParticle') as Mesh

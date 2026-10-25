@@ -16,6 +16,7 @@ import { Particles } from './effects/Particles'
 import { SceneEffects } from './postprocessing/SceneEffects'
 import { DebugOverlay } from './DebugOverlay'
 import { LabelProjection } from './LabelProjection'
+import { TankModel } from './entities/TankModel'
 import { MapCursor } from './input/MapCursor'
 
 function SceneReady() {
@@ -74,6 +75,12 @@ export default function GameScene() {
         {game.world.units.map((unit) => (
           <group key={unit.id}>
             <HarvesterModel unit={unit} />
+            <Particles unit={unit} />
+          </group>
+        ))}
+        {game.world.tanks.map((unit) => (
+          <group key={unit.id}>
+            <TankModel unit={unit} />
             <Particles unit={unit} />
           </group>
         ))}

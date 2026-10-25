@@ -6,7 +6,7 @@ A small crew. A vast desert.
 
 An RTS proof of concept for the browser, hosted at <https://harvesters.antonsizov.rocks/>. Search and social metadata are in `index.html`; the sharing cover is `public/og/harvester.jpg`. Crawler discovery files live in `public/robots.txt` and `public/sitemap.xml`.
 
-A playable desert RTS vertical slice: two autonomous tracked harvesters, one shared refinery, a construction yard, five slowly regenerating cyan mineral deposits, and an editable Blender-authored world. Each harvester finds resources, follows A* routes, mines, waits its turn, aligns nose first at one unloading point, unloads, and drives clear before the next unit enters. Deposits lose individual Blender-authored crystals as they are depleted and grow them back as they recover, with percentage, grade, and regrowth indicators.
+A playable desert RTS vertical slice: two autonomous tracked harvesters, one shared refinery, a construction yard, five slowly regenerating cyan mineral deposits, three controllable tanks, and an editable Blender-authored world. Each harvester finds resources, follows A* routes, mines, waits its turn, aligns nose first at one unloading point, unloads, and drives clear before the next unit enters. Deposits lose individual Blender-authored crystals as they are depleted and grow them back as they recover, with percentage, grade, and regrowth indicators.
 
 The **Courtyard / CY-01** has a workshop, overhead gantry crane, command block, antenna, and supply stacks. Its reserved 16 × 14 m footprint sits west of the refinery, leaving an 8 m passage for units. The refinery emits a light, drifting smoke plume from its taller chimney while accepting cargo; remaining smoke gently dissipates after unloading.
 
@@ -28,10 +28,12 @@ Open <http://127.0.0.1:5173>. Ready-to-use GLBs are included; Blender is only ne
 | WASD / arrow keys               | Pan camera                                     |
 | Mouse wheel                     | Smooth zoom                                    |
 | Middle-button drag / touch drag | Pan camera                                     |
-| Click harvester / H-01 or H-02  | Select                                         |
-| Left-click reachable ground     | Move selected harvester                        |
+| Click vehicle / fleet button    | Select                                         |
+| Left-click reachable ground     | Move selected vehicle                          |
+| Left-click crystals (harvester) | Harvest that mineral field                     |
+| Left-click Refinery (harvester) | Deliver current cargo through the dock queue   |
 | Esc / deselect button           | Deselect                                       |
-| F / Locate / minimap            | Select and center harvester                    |
+| F / Locate / minimap            | Select and center vehicle                      |
 | Space / pause button            | Pause or resume simulation                     |
 | 1× button                       | Cycle 1×, 2×, 4× simulation speed              |
 | Hold / Autopilot                | Stop unit, or resume autonomous work           |
@@ -40,19 +42,21 @@ Open <http://127.0.0.1:5173>. Ready-to-use GLBs are included; Blender is only ne
 | P                               | Toggle remaining navigation path               |
 | Sliders button                  | Developer controls and postprocessing settings |
 
-The simulation starts when assets are ready and pauses in hidden tabs. The camera stays usable while the simulation is paused. Select a harvester, then left-click the ground to move it: a green cursor marks reachable ground and a red cursor marks blocked or unreachable destinations. Accepted orders flash a target reticle and play a random voice confirmation. Invalid clicks retain the current order and selection. Camera drags do not issue orders. On touch screens, tap to move and drag to pan.
+The simulation starts when assets are ready and pauses in hidden tabs. The camera stays usable while the simulation is paused. Select any vehicle, then left-click the ground to move it: a green cursor marks reachable ground and a red cursor marks blocked or unreachable destinations. Accepted orders flash a target reticle and play a random voice confirmation. Invalid clicks retain the current order and selection. Camera drags do not issue orders. On touch screens, tap to move and drag to pan.
 
-A manual MOVE retains cargo and leaves the harvester waiting at its destination. Choose **Autopilot** to resume autonomous harvesting. Orders issued while paused execute after resuming. Targeted HARVEST is also supported by the tested command API.
+A manual MOVE retains cargo and leaves the harvester waiting at its destination. Choose **Autopilot** to resume autonomous harvesting. Orders issued while paused execute after resuming. For a harvester, left-click crystals to start mining that field, or the Refinery to unload a partial or full load. Dedicated crystal and unload cursors show the contextual action. An empty cargo bay or unreachable/depleted field shows a rejection without replacing the current order. A harvest order received in port is remembered until unloading and departure are safely complete. After delivery, autonomous extraction resumes. Tanks only accept MOVE and Hold; buildings and mineral fields remain blocked destinations.
 
-Selecting a harvester plays one of four random **“Yes sir!”** acknowledgements, without consecutive repeats or overlapping voices. The initial selection stays silent. The supplied ElevenLabs MP3s are grouped under `public/audio/voices/harvester/selection/`.
+Selecting any vehicle plays one of four random **“Yes sir!”** acknowledgements, without consecutive repeats or overlapping voices. The initial selection stays silent. The supplied ElevenLabs MP3s are grouped under `public/audio/voices/harvester/selection/`.
 
-Accepted movement orders use all six new takes from `public/audio/voices/harvester/orders/move-order-01.mp3` through `move-order-06.mp3`. Each group avoids immediate repeats; selection and movement share one speech channel.
+Accepted movement, harvesting and unloading orders use all six existing takes from `public/audio/voices/harvester/orders/move-order-01.mp3` through `move-order-06.mp3`. Each group avoids immediate repeats; selection and movement share one speech channel.
 
 Seven background tracks play in order and repeat the playlist, starting with your first action. The **FIELD RADIO** panel offers Play/Pause, Next, volume, and song selection. Music defaults to 25% volume and pauses in hidden tabs. Named assets live in `public/audio/music/`; see [game audio](docs/audio.md) for titles, source mappings, and playback behavior.
 
 Resting mineral fields regenerate **12 M per simulation minute**, up to their original capacity. Autonomous harvesters wait for **24 M** before setting out again, then resume without player input. Regeneration freezes with the simulation and follows its speed setting. Rates and dispatch reserve are configurable in `src/game/config.ts`.
 
 Harvester bodies gently pitch on acceleration and braking, then settle through a damped suspension animation while the tracks stay grounded. Reverse travel mirrors the response and sends dust from the front ends of the tracks. Presentation tuning lives in `src/rendering/entities/harvesterMotion.ts`.
+
+The light **Sand scout**, medium **Dune ranger**, and heavy **Basin sentinel** start on the northern perimeter, clear of mining and docking routes. They have distinct Blender-authored silhouettes and top speeds of 7.2 / 5.6 / 4 m/s. Idle turrets occasionally scan the perimeter; moving turrets return forward. Scans follow simulation pause and speed. There is no firing yet; each GLB has separate `TurretYaw`, `GunPitch`, and `Muzzle` nodes for future aiming and projectile spawning.
 
 ## Development
 
@@ -94,7 +98,7 @@ public/audio/           Local music playlist and unit voice takes
 scripts/blender/        Reproducible Blender authoring/export scripts
 src/game/               Pure TypeScript gameplay; no React, Three.js, or Zustand
   navigation/           Logical grid, occupancy, exact height sampling, deterministic A*
-  simulation/           World ownership and explicit harvester state machine
+  simulation/           World ownership, harvesting and tank behaviors
   commands/             Validated command queue, executed at tick boundaries
   economy/              Resource balances and reservable refinery receiver
   core/                 Bounded 20 Hz fixed-step clock
@@ -111,6 +115,6 @@ See [fleet, docking, and mineral regrowth](docs/fleet-and-docking.md), [architec
 
 ## Scope and limits
 
-This is a two-unit, two-building desktop browser prototype. Courtyard is the placed construction-yard building; building placement and production controls are future work. The map starts with 3,660 minerals; slow regrowth provides continued income after the initial reserves run down. Reload to start a new shift. There is no combat, save/load, or physics. The refinery uses a FIFO queue with distinct waiting bays, a reserved approach, fixed unloading pose, and reverse departure. Nearby units yield and replan with clearance; this is not a general crowd-navigation system. Holding a unit inside the port intentionally keeps the dock occupied until that unit resumes or drives clear.
+This is a five-unit, two-building desktop browser prototype. Courtyard is the placed construction-yard building; building placement and production controls are future work. The map starts with 3,660 minerals; slow regrowth provides continued income after the initial reserves run down. Reload to start a new shift. There is no combat, save/load, or physics. The refinery uses a FIFO queue with distinct waiting bays, a reserved approach, fixed unloading pose, and reverse departure. Nearby units yield and replan with clearance; this is not a general crowd-navigation system. Holding a unit inside the port intentionally keeps the dock occupied until that unit resumes or drives clear.
 
 Portrait layouts and touch panning are supported, but multi-touch pinch zoom and full mobile controls are not implemented. Performance has been smoke-tested in Chromium; cross-browser and large-fleet performance are not yet benchmarked. The Three.js production chunk exceeds Vite's default 500 KB warning threshold; the canvas code is lazy-loaded separately from the HUD.

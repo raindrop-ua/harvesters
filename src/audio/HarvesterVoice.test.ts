@@ -153,4 +153,49 @@ describe('movement order acknowledgements', () => {
     expect(game.moveSelected({ x: 26, z: 35 }).accepted).toBe(false)
     expect(f.player.play).toHaveBeenCalledTimes(count)
   })
+  it('uses the existing order pool for contextual harvesting, unloading and tank movement, keeping rejected orders silent', () => {
+    const f = fixture(),
+      game = new GameRuntime(f.voice)
+    game.ui.setState({ ready: true })
+    const w = game.world,
+      h = w.units[0],
+      d = w.deposits[2],
+      p = w.grid.gridToWorld(d.cell)
+    expect(
+      game.orderSelected({ kind: 'deposit', id: d.id, cell: d.cell }, p)
+        .accepted,
+    ).toBe(true)
+    expect(f.player.play).toHaveBeenCalledTimes(1)
+    expect(h.targetId).toBeUndefined()
+    game.simulation.step(0.05)
+    expect(h.targetId).toBe(d.id)
+    h.cargo = 10
+    expect(
+      game.orderSelected(
+        { kind: 'refinery', id: w.refinery!.id, cell: { x: 23, z: 28 } },
+        w.refineryPosition,
+      ).accepted,
+    ).toBe(true)
+    expect(f.player.play).toHaveBeenCalledTimes(2)
+    game.selectUnit(w.tanks[0].id)
+    const count = f.player.play.mock.calls.length
+    expect(
+      game.orderSelected({ kind: 'deposit', id: d.id, cell: d.cell }, p)
+        .accepted,
+    ).toBe(false)
+    expect(
+      game.orderSelected(
+        { kind: 'refinery', id: w.refinery!.id, cell: { x: 23, z: 28 } },
+        w.refineryPosition,
+      ).accepted,
+    ).toBe(false)
+    expect(f.player.play).toHaveBeenCalledTimes(count)
+    const cell = { x: 21, z: 16 }
+    expect(
+      game.orderSelected({ kind: 'ground', cell }, w.grid.gridToWorld(cell))
+        .accepted,
+    ).toBe(true)
+    expect(f.player.play).toHaveBeenCalledTimes(count + 1)
+    expect(HARVESTER_MOVE_VOICES).toContain(f.player.src)
+  })
 })

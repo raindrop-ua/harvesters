@@ -42,7 +42,7 @@ export function RockModel({ index }: { index: number }) {
 export function MineralModel({ deposit }: { deposit: Deposit }) {
   const game = useGame(),
     model = useModel('minerals')
-  const surface = useMapSurface(true)
+  const surface = useMapSurface({ kind: 'deposit', id: deposit.id })
   const crystals = useMemo(
     () =>
       model.children
@@ -73,7 +73,10 @@ export function RefineryModel() {
   const game = useGame(),
     model = useModel('refinery'),
     p = game.world.refineryPosition
-  const surface = useMapSurface(true)
+  const surface = useMapSurface({
+    kind: 'refinery',
+    id: game.world.refinery?.id ?? 'refinery-01',
+  })
   const lamp = model.getObjectByName('DockStatusLight')
   useFrame(({ clock }) => {
     if (lamp) {

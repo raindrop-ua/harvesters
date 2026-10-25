@@ -7,6 +7,7 @@ import type {
   UnitCommand,
 } from '../types'
 import type { World } from './World'
+import { VehicleNavigation } from '../navigation/VehicleNavigation'
 
 export function angleDelta(from: number, to: number): number {
   return Math.atan2(Math.sin(to - from), Math.cos(to - from))
@@ -22,41 +23,16 @@ const dockStates: readonly HarvesterState[] = [
 
 /** One unit's behavior; all fleet members share navigation, deposits, and the dock. */
 export class HarvesterBehavior {
+  private readonly movement: VehicleNavigation
   constructor(
     readonly world: World,
     readonly unit: Harvester,
-  ) {}
+  ) {
+    this.movement = new VehicleNavigation(world, unit)
+  }
 
   private transition(state: HarvesterState, message: string): void {
     Object.assign(this.unit, { state, stateTime: 0, message })
-  }
-  private obstacles(): Set<number> {
-    const w = this.world,
-      blocked = new Set<number>(),
-      receiver = w.refinery
-    for (const cell of w.grid.cells) {
-      const p = w.grid.gridToWorld(cell)
-      if (
-        w.units.some(
-          (other) =>
-            other !== this.unit &&
-            Math.hypot(p.x - other.position.x, p.z - other.position.z) <
-              w.settings.unitSeparation,
-        )
-      )
-        blocked.add(cell.z * w.grid.width + cell.x)
-      if (receiver?.reservedBy && receiver.reservedBy !== this.unit.id) {
-        const dock = w.grid.gridToWorld(receiver.dock),
-          entry = w.grid.gridToWorld(receiver.entry)
-        if (
-          Math.abs(p.x - dock.x) < 3 &&
-          p.z >= dock.z - 2 &&
-          p.z <= entry.z + 2
-        )
-          blocked.add(cell.z * w.grid.width + cell.x)
-      }
-    }
-    return blocked
   }
   private route(
     destination: GridPosition,
@@ -66,8 +42,8 @@ export class HarvesterBehavior {
   ): boolean {
     const w = this.world,
       u = this.unit,
-      blocked = this.obstacles()
-    const first = this.findMovementPath(via ?? destination, blocked)
+      blocked = this.movement.obstacles()
+    const first = this.movement.findPath(via ?? destination, blocked)
     if (!first) return false
     const second = via ? w.navigation.findPath(via, destination, blocked) : []
     if (!second) return false
@@ -79,36 +55,9 @@ export class HarvesterBehavior {
     return true
   }
   canMoveTo(destination: GridPosition): boolean {
-    return this.findMovementPath(destination, this.obstacles()) !== null
-  }
-  private findMovementPath(destination: GridPosition, blocked: Set<number>) {
-    return this.world.navigation.findPath(
-      this.world.grid.worldToGrid(this.unit.position),
-      destination,
-      blocked,
-      (next) => this.canConnect(next),
+    return (
+      this.movement.findPath(destination, this.movement.obstacles()) !== null
     )
-  }
-  private canConnect(next: GridPosition): boolean {
-    const w = this.world,
-      u = this.unit,
-      to = w.grid.gridToWorld(next)
-    const dx = to.x - u.position.x,
-      dz = to.z - u.position.z,
-      length2 = dx * dx + dz * dz
-    return w.units.every((other) => {
-      if (other === u) return true
-      const ox = other.position.x - u.position.x,
-        oz = other.position.z - u.position.z
-      const t = length2
-        ? Math.max(0, Math.min(1, (ox * dx + oz * dz) / length2))
-        : 0
-      const minimum = Math.hypot(ox - t * dx, oz - t * dz)
-      return (
-        minimum >=
-        Math.min(w.settings.unitSeparation, Math.hypot(ox, oz)) - 0.0001
-      )
-    })
   }
   private insidePort(receiver: ResourceReceiver): boolean {
     const dock = this.world.grid.gridToWorld(receiver.dock)
@@ -129,6 +78,9 @@ export class HarvesterBehavior {
     u.path = []
     u.speed = 0
     u.targetId = undefined
+    // Remember a field clicked during unloading/full cargo until the dock is safely clear.
+    u.orderedDepositId =
+      command.type === 'HARVEST' ? command.resourceId : undefined
     if (command.type === 'STOP') {
       u.autonomous = false
       this.transition('STOPPED', 'Standing by · cargo retained')
@@ -157,9 +109,17 @@ export class HarvesterBehavior {
       } else this.beginUndock()
     } else if (command.type === 'HARVEST') {
       u.autonomous = true
+      if (u.cargo >= u.capacity - 1e-8) {
+        this.transition(
+          'CARGO_FULL',
+          'Cargo full · returning before extraction',
+        )
+        return
+      }
       const deposit = this.world.deposits.find(
         (d) => d.id === command.resourceId,
       )
+      u.orderedDepositId = undefined
       if (!deposit || !this.routeToDeposit(deposit))
         this.wait('Deposit unreachable')
     } else {
@@ -179,7 +139,7 @@ export class HarvesterBehavior {
     u.retryAt = this.world.time + this.world.settings.retryInterval
     this.transition('IDLE', message)
   }
-  private routeToDeposit(deposit: Deposit): boolean {
+  private depositApproaches(deposit: Deposit): GridPosition[] {
     const w = this.world,
       u = this.unit,
       radius = Math.ceil(deposit.harvestingRadius / w.grid.cellSize)
@@ -216,7 +176,17 @@ export class HarvesterBehavior {
         Math.hypot(pb.x - u.position.x, pb.z - u.position.z)
       )
     })
-    for (const approach of approaches)
+    return approaches
+  }
+  canHarvest(deposit: Deposit): boolean {
+    const blocked = this.movement.obstacles()
+    return this.depositApproaches(deposit).some(
+      (cell) => this.movement.findPath(cell, blocked) !== null,
+    )
+  }
+  private routeToDeposit(deposit: Deposit): boolean {
+    const u = this.unit
+    for (const approach of this.depositApproaches(deposit))
       if (
         this.route(
           approach,
@@ -235,6 +205,13 @@ export class HarvesterBehavior {
     if (u.cargo >= u.capacity - 1e-8) {
       this.transition('CARGO_FULL', 'Cargo bay full')
       return
+    }
+    if (u.orderedDepositId) {
+      const ordered = w.deposits.find(
+        (d) => d.id === u.orderedDepositId && d.amount > 1e-8,
+      )
+      u.orderedDepositId = undefined
+      if (ordered && this.routeToDeposit(ordered)) return
     }
     const score = (d: Deposit) => {
       const p = w.grid.gridToWorld(d.cell)
@@ -284,7 +261,7 @@ export class HarvesterBehavior {
       const p = w.grid.gridToWorld(cell)
       return (
         w.grid.isWalkable(cell) &&
-        w.units.every(
+        w.vehicles.every(
           (other) =>
             other === u ||
             Math.hypot(other.position.x - p.x, other.position.z - p.z) >=
@@ -458,17 +435,7 @@ export class HarvesterBehavior {
     const amount = Math.min(distance, u.speed * dt),
       x = u.position.x + (distance ? (dx / distance) * amount : 0),
       z = u.position.z + (distance ? (dz / distance) * amount : 0)
-    const obstruction = w.units.find(
-      (other) =>
-        other !== u &&
-        Math.hypot(other.position.x - x, other.position.z - z) <
-          w.settings.unitSeparation &&
-        Math.hypot(other.position.x - x, other.position.z - z) <
-          Math.hypot(
-            other.position.x - u.position.x,
-            other.position.z - u.position.z,
-          ),
-    )
+    const obstruction = this.movement.obstructionAt(x, z)
     if (obstruction) {
       u.speed = 0
       u.blockedTime += dt

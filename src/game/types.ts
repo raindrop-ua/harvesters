@@ -23,27 +23,52 @@ export type HarvesterState =
   | 'MOVE'
   | 'STOPPED'
 
-export interface Harvester {
+export interface MobileUnit {
   id: EntityId
   position: Position
   previousPosition: Position
   heading: number
   previousHeading: number
   speed: number
-  state: HarvesterState
   stateTime: number
+  path: GridPosition[]
+  pathIndex: number
+  message: string
+  blockedTime: number
+}
+
+export interface Harvester extends MobileUnit {
+  kind: 'harvester'
+  state: HarvesterState
   cargo: number
   capacity: number
   resourceType: ResourceType
   targetId?: EntityId
-  path: GridPosition[]
-  pathIndex: number
+  orderedDepositId?: EntityId
   autonomous: boolean
   retryAt: number
-  message: string
-  blockedTime: number
   deliveries: number
 }
+
+export type TankClass = 'light' | 'medium' | 'heavy'
+export interface Tank extends MobileUnit {
+  kind: 'tank'
+  tankClass: TankClass
+  state: 'IDLE' | 'MOVE' | 'STOPPED'
+  /** Local turret yaw, relative to the hull. Gun pitch/muzzle are authored GLB nodes. */
+  turretHeading: number
+  previousTurretHeading: number
+  turretTarget: number
+  nextScanAt: number
+  scanSequence: number
+}
+export type Vehicle = Harvester | Tank
+
+export type MapTarget =
+  | { kind: 'ground'; cell: GridPosition }
+  | { kind: 'deposit'; id: EntityId; cell: GridPosition }
+  | { kind: 'refinery'; id: EntityId; cell: GridPosition }
+  | { kind: 'blocked' | 'unit'; cell: GridPosition }
 
 export interface Deposit {
   id: EntityId

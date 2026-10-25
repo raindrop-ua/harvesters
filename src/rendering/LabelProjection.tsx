@@ -21,11 +21,17 @@ export function LabelProjection() {
           : 'hidden'
       element.style.transform = `translate(${((projected.x + 1) * size.width) / 2}px,${((1 - projected.y) * size.height) / 2}px) translate(-50%,-50%)`
     }
-    for (const unit of game.world.units) {
+    for (const unit of game.world.vehicles) {
       const alpha = game.loop.alpha
       const x = MathUtils.lerp(unit.previousPosition.x, unit.position.x, alpha),
         z = MathUtils.lerp(unit.previousPosition.z, unit.position.z, alpha)
-      place(unit.id, x, game.world.grid.heightAt(x, z) + 4.5, z)
+      place(
+        unit.id,
+        x,
+        game.world.grid.heightAt(x, z) +
+          (unit.kind === 'harvester' ? 4.5 : 3.8),
+        z,
+      )
     }
     for (const d of game.world.deposits) {
       const p = game.world.grid.gridToWorld(d.cell)

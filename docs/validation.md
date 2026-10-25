@@ -10,14 +10,15 @@ Validated locally with Node 24.18.0, Blender 5.2.3 LTS, React 19.3.1, R3F 9.8.2,
 - Strict TypeScript type checking.
 - ESLint.
 - Simulation/rendering import boundaries and Blender-only world-geometry guard.
-- **68 Node-only tests**, including grid conversions, exact triangle heights, overlapping occupancy, A* obstacles/costs/unreachable goals, construction-yard occupancy and passage traversal, all harvesting states, capacity, partial-load depletion, mineral regeneration, economy conservation, missing refineries, blocked docks, invalidated paths, player movement orders, dock reservations, FPS-independent scheduling, bounded catch-up, harvester suspension, smoke lifecycle, selection/movement speech, and background music.
+- **79 Node-only tests**, including grid conversions, exact triangle heights, overlapping occupancy, A* obstacles/costs/unreachable goals, construction-yard occupancy and passage traversal, all harvesting states, capacity, partial-load depletion, mineral regeneration, economy conservation, missing refineries, blocked docks, invalidated paths, player movement orders, dock reservations, FPS-independent scheduling, bounded catch-up, harvester suspension, smoke lifecycle, selection/movement speech, and background music.
 - Music coverage includes all seven local MP3 assets, ordered playback and wraparound, initial activation, pause intent, hidden-tab resume, track selection, stale play promises, blocked playback retry, bounded failure handling, volume, and cleanup.
 - With regeneration disabled, a full-map fleet simulation mines and delivers all **3,660 minerals**, then both units idle with no resource loss or overlapping centers.
 - Regeneration tests cover 12 M/min per resting field, original-capacity limits, no growth during harvesting, dispatch reserve, automatic repeated deliveries after total exhaustion, conserved initial + regenerated resources, unchanged navigation reservations, Hold/Autopilot, small-capacity fields, pause, speed, and identical 30/144 FPS results.
 - Presentation motion tests cover signed forward/reverse travel at four headings, acceleration/braking pitch, reverse symmetry, restrained peaks, settling, 30/144 FPS response, pause, and bounded integration after a large frame gap.
 - Base tests verify the 56-cell courtyard footprint, eight-meter passage, rejection of MOVE orders into the yard, and an actual vehicle trip through the passage. Smoke tests cover activation, bounded pooling, no extra emission on frozen timestamps, stop/drain, repeated activation, and no burst after a long clock gap.
 - Player-order tests cover walkable-but-unreachable goals, other units, reserved refinery approaches, revalidation after new obstacles, cargo retention, waiting at the destination, and Autopilot resumption. Audio tests verify all six distinct movement takes, complete random-pool coverage, separate repeat histories, one shared speech channel, and accepted-only acknowledgements.
-- All eight GLBs pass structure, required-node and Blender-provenance checks. Courtyard geometry fits its reserved footprint, and all **4,225 terrain vertex heights** match navigation data.
+- All eleven GLBs pass structure, required-node and Blender-provenance checks. Courtyard geometry fits its reserved footprint, and all **4,225 terrain vertex heights** match navigation data.
+- Contextual-order tests cover per-unit capabilities, mining the clicked field, partial-load delivery, a field order received during unloading, rejection of empty/depleted/unreachable requests, all three tank classes moving/stopping, parked-unit clearance, shared collision previews, and smooth staggered idle scans. Voice tests cover harvesting/unloading confirmations and tank movement while rejected clicks remain silent.
 - Production build.
 
 `npm install` reported **0 dependency vulnerabilities** after updating Vitest to a patched release. This is a dependency advisory check, not an application security audit.
@@ -69,3 +70,15 @@ The final production build was also served on port 4173 and checked without temp
 The build emits Vite's advisory warning for the approximately 704 KB minified Three.js chunk (about 182 KB gzip). The scene is lazy-loaded and the engine is separately cached; the warning is retained rather than hidden by increasing the budget.
 
 This pass is not a large-fleet benchmark or a Safari/Firefox certification. Desktop controls are primary. Touch panning and a responsive HUD exist, but pinch zoom, multi-unit collision avoidance, and large-fleet crowd navigation are outside this slice. The two-unit FIFO dock queue is implemented and tested.
+
+## Contextual orders and tank playtest
+
+At 1440 × 1000, native pointer clicks selected the actual light-tank mesh, issued a ground MOVE, kept it queued while paused, and drove it to the exact target cell after resuming. All five fleet buttons select the appropriate unit; tank cards show class/mobility and MOVE/HOLD controls rather than cargo/autopilot controls.
+
+A real crystal click showed the harvest cursor and HARVEST reticle, assigned H-01 to that exact field, and produced a partial load. A real Refinery-roof click showed the unload cursor and UNLOAD reticle, entered the shared dock flow, delivered that load, and retained the refinery lock through reverse departure. Accepted contextual orders used the existing voice pool. Light-tank clicks on the same crystals and refinery showed a blocked cursor/rejection, emitted no order voice, retained selection and left its position unchanged.
+
+The heavy-tank render node followed authoritative turret yaw while the hull stayed fixed. A paused sample retained identical time, turret yaw and hull yaw; resuming produced another smooth scan. The nested muzzle marker followed the moving turret. Full-map simulation with all three parked tanks still delivered all 3,660 finite minerals; separation checks include every pair of vehicles.
+
+At 390 × 844, all five fleet buttons and the selected tank controls remained visible with no horizontal overflow. Screenshots: `artifacts/tanks-staging.png`, `artifacts/tank-blocked.png`, `artifacts/tanks-desktop.png`, and `artifacts/tanks-mobile.png`. Browser-only runtime/scene inspection was injected through test routes, not shipped in application code.
+
+A clean production preview on port 4173 loaded all three tank GLBs, exposed no test instrumentation, completed its first delivery, and produced no JavaScript errors. `artifacts/tanks-production.png` records the running five-unit scene with the heavy tank selected.

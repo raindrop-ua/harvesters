@@ -66,10 +66,17 @@ export function MapCursor() {
       mode = 'select'
       cursor = 'pointer'
     } else if (hover && state.selectedId && state.ready) {
-      const valid =
-        hover.kind === 'ground' &&
-        game.simulation.previewMove(state.selectedId, hover.cell).accepted
-      mode = valid ? 'move' : 'blocked'
+      const valid = game.simulation.previewMapOrder(
+        state.selectedId,
+        hover,
+      ).accepted
+      mode = valid
+        ? hover.kind === 'deposit'
+          ? 'harvest'
+          : hover.kind === 'refinery'
+            ? 'unload'
+            : 'move'
+        : 'blocked'
       cursor = `url("/cursors/${mode}.svg") 16 16, ${valid ? 'crosshair' : 'not-allowed'}`
     }
     gl.domElement.style.cursor = cursor

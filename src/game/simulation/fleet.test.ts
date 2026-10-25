@@ -88,10 +88,14 @@ describe('two harvesters and one refinery', () => {
       expect(w.units.filter((u) => u.state === 'UNLOAD')).toHaveLength(
         w.units.some((u) => u.state === 'UNLOAD') ? 1 : 0,
       )
-      const [a, b] = w.units
-      expect(
-        Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z),
-      ).toBeGreaterThanOrEqual(w.settings.unitSeparation - 0.03)
+      for (const [index, a] of w.vehicles.entries())
+        for (const b of w.vehicles.slice(index + 1))
+          expect(
+            Math.hypot(
+              a.position.x - b.position.x,
+              a.position.z - b.position.z,
+            ),
+          ).toBeGreaterThanOrEqual(w.settings.unitSeparation - 0.03)
       expect(
         w.deposits.reduce((sum, d) => sum + d.amount, 0) +
           w.units.reduce((sum, u) => sum + u.cargo, 0) +

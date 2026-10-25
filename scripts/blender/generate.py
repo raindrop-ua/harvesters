@@ -495,6 +495,9 @@ def effects():
 
 if __name__ == "__main__":
     generators = {"harvester": harvester, "refinery": refinery, "courtyard": courtyard, "smoke": smoke, "minerals": minerals, "rocks": rocks, "terrain": terrain, "effects": effects}
+    sys.path.insert(0, str(ROOT / "scripts/blender"))
+    from tanks import tank
+    generators.update({"tank-" + kind: (lambda k=kind: tank(k)) for kind in ["light", "medium", "heavy"]})
     names = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else list(generators)
     for name in names:
         generators[name]()

@@ -3,7 +3,15 @@ import { config, type HarvesterConfig, type MineralConfig } from '../config'
 import { Grid } from '../navigation/Grid'
 import { Pathfinder } from '../navigation/Pathfinder'
 import { Economy, Refinery } from '../economy/Economy'
-import type { Deposit, Harvester, Position, ResourceReceiver } from '../types'
+import type {
+  Deposit,
+  Harvester,
+  Position,
+  ResourceReceiver,
+  Tank,
+  TankClass,
+  Vehicle,
+} from '../types'
 
 export { layout }
 
@@ -13,6 +21,8 @@ export class World {
   readonly economy = new Economy()
   readonly deposits: Deposit[]
   readonly units: Harvester[]
+  readonly tanks: Tank[]
+  readonly vehicles: Vehicle[]
   readonly refineryPosition: Position
   readonly courtyardPosition: Position
   refinery: ResourceReceiver | undefined
@@ -25,6 +35,7 @@ export class World {
     readonly settings: HarvesterConfig = { ...config.harvester },
     spawns = layout.harvesters,
     readonly mineralSettings: MineralConfig = { ...config.minerals },
+    tankSpawns = layout.tanks,
   ) {
     this.grid = new Grid()
     this.navigation = new Pathfinder(this.grid)
@@ -77,6 +88,7 @@ export class World {
     this.units = spawns.map((definition) => {
       const position = this.grid.gridToWorld(definition)
       return {
+        kind: 'harvester',
         id: definition.id,
         position,
         previousPosition: { ...position },
@@ -97,5 +109,30 @@ export class World {
         deliveries: 0,
       }
     })
+    this.tanks = tankSpawns.map((definition, index) => {
+      const position = this.grid.gridToWorld(definition)
+      return {
+        kind: 'tank',
+        tankClass: definition.tankClass as TankClass,
+        id: definition.id,
+        position,
+        previousPosition: { ...position },
+        heading: Math.PI / 2,
+        previousHeading: Math.PI / 2,
+        speed: 0,
+        state: 'IDLE',
+        stateTime: 0,
+        path: [],
+        pathIndex: 0,
+        message: 'Perimeter watch · awaiting orders',
+        blockedTime: 0,
+        turretHeading: 0,
+        previousTurretHeading: 0,
+        turretTarget: 0,
+        nextScanAt: 3 + index * 2.7,
+        scanSequence: index,
+      }
+    })
+    this.vehicles = [...this.units, ...this.tanks]
   }
 }

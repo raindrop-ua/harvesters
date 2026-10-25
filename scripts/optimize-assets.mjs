@@ -13,6 +13,9 @@ const assetNames = [
   'minerals',
   'rocks',
   'effects',
+  'tank-light',
+  'tank-medium',
+  'tank-heavy',
 ]
 const requested = process.argv.slice(2)
 for (const name of requested.length ? requested : assetNames) {

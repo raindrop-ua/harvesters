@@ -14,6 +14,7 @@ export function Icon({
     | 'close'
     | 'arrow'
     | 'tractor'
+    | 'tank'
     | 'return'
     | 'compass'
     | 'next'
@@ -62,6 +63,13 @@ export function Icon({
     close: <path d="m6 6 12 12M6 18 18 6" />,
     arrow: <path d="M4 12h15m-6-6 6 6-6 6" />,
     return: <path d="m9 5-6 6 6 6M3 11h12a5 5 0 0 1 0 10" />,
+    tank: (
+      <>
+        <path d="M3 14h18v6H3zM7 14V9h9v5M12 9V3M5 17h14" />
+        <circle cx="7" cy="17" r="1" />
+        <circle cx="17" cy="17" r="1" />
+      </>
+    ),
     tractor: (
       <>
         <path d="M4 11h16v7H4zM7 11V6h7v5M3 19h18M16 9h3v2" />

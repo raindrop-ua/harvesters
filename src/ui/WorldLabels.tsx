@@ -28,7 +28,7 @@ export function WorldLabels() {
           <small>CONSTRUCTION YARD</small>
         </div>
       </div>
-      {game.world.units.map((unit) => (
+      {game.world.vehicles.map((unit) => (
         <div
           key={unit.id}
           className="projected-label"
@@ -38,7 +38,9 @@ export function WorldLabels() {
             className={`unit-world-label ${selectedId === unit.id ? 'is-selected' : ''}`}
             data-testid={`world-${unit.id}`}
           >
-            H-{unit.id.slice(-2)}
+            {unit.kind === 'harvester'
+              ? `H-${unit.id.slice(-2)}`
+              : `${unit.tankClass[0].toUpperCase()}T-01`}
           </span>
         </div>
       ))}

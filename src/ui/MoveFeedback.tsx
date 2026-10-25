@@ -19,6 +19,17 @@ export function MoveFeedback() {
     return () => window.clearTimeout(timer)
   }, [feedback, game])
   if (!feedback || feedback.unitId !== selectedId) return null
+  const unit = game.world.vehicles.find((u) => u.id === selectedId)
+  const callsign =
+    unit?.kind === 'tank'
+      ? `${unit.tankClass[0].toUpperCase()}T`
+      : `H-${feedback.unitId.slice(-2)}`
+  const order =
+    feedback.order === 'HARVEST'
+      ? 'HARVEST'
+      : feedback.order === 'RETURN_CARGO'
+        ? 'UNLOAD'
+        : 'MOVE'
   return (
     <div
       className="projected-label"
@@ -36,9 +47,7 @@ export function MoveFeedback() {
       >
         <Icon name={feedback.accepted ? 'focus' : 'close'} size={36} />
         <small>
-          {feedback.accepted
-            ? `MOVE · H-${feedback.unitId.slice(-2)}`
-            : feedback.reason}
+          {feedback.accepted ? `${order} · ${callsign}` : feedback.reason}
         </small>
       </div>
     </div>

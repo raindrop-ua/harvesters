@@ -40,6 +40,9 @@ const names = [
   'minerals',
   'rocks',
   'effects',
+  'tank-light',
+  'tank-medium',
+  'tank-heavy',
 ]
 for (const name of names) {
   assert(
@@ -71,6 +74,41 @@ for (const name of names) {
       json.nodes.some((n) => n.name === node),
       `${name}: missing ${node}`,
     )
+  if (name.startsWith('tank-')) {
+    for (const node of [
+      'Hull',
+      'LeftTrackAssembly',
+      'RightTrackAssembly',
+      'TurretYaw',
+      'GunPitch',
+      'Muzzle',
+    ])
+      assert(
+        json.nodes.some((n) => n.name === node),
+        `${name}: missing ${node}`,
+      )
+    const yaw = json.nodes.find((n) => n.name === 'TurretYaw')
+    const pitchIndex = json.nodes.findIndex((n) => n.name === 'GunPitch')
+    const muzzleIndex = json.nodes.findIndex((n) => n.name === 'Muzzle')
+    assert(
+      yaw.children?.includes(pitchIndex),
+      `${name}: gun must rotate with turret`,
+    )
+    assert(
+      json.nodes[pitchIndex].children?.includes(muzzleIndex),
+      `${name}: muzzle must follow gun pitch`,
+    )
+    assert(
+      Math.abs(yaw.translation[0]) < 0.001 &&
+        Math.abs(yaw.translation[2]) < 0.001 &&
+        yaw.translation[1] > 1,
+      `${name}: turret origin must be at its authored turntable`,
+    )
+    assert(
+      json.nodes[muzzleIndex].translation[2] > 2,
+      `${name}: muzzle must point along local +Z`,
+    )
+  }
   if (name === 'courtyard') {
     const { courtyard, cellSize } = JSON.parse(
       readFileSync('assets/world.json', 'utf8'),
