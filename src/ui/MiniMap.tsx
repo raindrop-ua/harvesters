@@ -3,7 +3,8 @@ import { layout } from '../game/simulation/World'
 
 export function MiniMap() {
   const game = useGame(),
-    position = useUI((s) => s.view.position)
+    units = useUI((s) => s.view.units),
+    selectedId = useUI((s) => s.selectedId)
   const map = (v: number) => ((v + 64) / 128) * 160
   return (
     <button
@@ -19,7 +20,7 @@ export function MiniMap() {
       <svg
         viewBox="0 0 160 112"
         role="img"
-        aria-label="Sector map with refinery, deposits and harvester"
+        aria-label="Sector map with refinery, deposits and two harvesters"
       >
         <defs>
           <pattern
@@ -71,20 +72,26 @@ export function MiniMap() {
             height="12.5"
             fill="#d8c9a4"
           />
-          <circle
-            cx={map(position.x)}
-            cy={map(position.z)}
-            r="5"
-            fill="none"
-            stroke="#c3eed5"
-            strokeWidth="0.7"
-          />
-          <circle
-            cx={map(position.x)}
-            cy={map(position.z)}
-            r="2"
-            fill="#eaf9db"
-          />
+          {units.map((u) => (
+            <g key={u.id}>
+              {u.id === selectedId && (
+                <circle
+                  cx={map(u.position.x)}
+                  cy={map(u.position.z)}
+                  r="5"
+                  fill="none"
+                  stroke="#c3eed5"
+                  strokeWidth="0.7"
+                />
+              )}
+              <circle
+                cx={map(u.position.x)}
+                cy={map(u.position.z)}
+                r="2"
+                fill={u.id === selectedId ? '#eaf9db' : '#edbb78'}
+              />
+            </g>
+          ))}
         </g>
         <path
           d="M76 52h8m-4-4v8"

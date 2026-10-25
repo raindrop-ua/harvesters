@@ -24,6 +24,15 @@ for (const name of names) {
     `${name} must be exported by Blender`,
   )
   assert(json.meshes.length > 0)
+  if (name === 'minerals') {
+    for (let i = 0; i < 7; i++) {
+      const node = `Crystal${String(i).padStart(2, '0')}`
+      assert(
+        json.nodes.some((n) => n.name === node),
+        `Missing staged depletion node ${node}`,
+      )
+    }
+  }
   if (name === 'harvester') {
     for (const node of [
       'MainChassis',

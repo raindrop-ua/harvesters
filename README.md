@@ -1,8 +1,8 @@
 # HARVESTER
 
-A small machine. A vast desert.
+A small crew. A vast desert.
 
-A playable desert RTS vertical slice: one autonomous tracked harvester, one refinery, five finite cyan mineral deposits, and an editable Blender-authored world. The harvester finds resources, follows A* routes, mines, docks, unloads, and repeats without input.
+A playable desert RTS vertical slice: two autonomous tracked harvesters, one shared refinery, five finite cyan mineral deposits, and an editable Blender-authored world. Each harvester finds resources, follows A* routes, mines, waits its turn, aligns nose first at one unloading point, unloads, and drives clear before the next unit enters. Deposits lose individual Blender-authored crystals as they are depleted, with percentage and grade indicators.
 
 ## Run
 
@@ -22,7 +22,7 @@ Open <http://127.0.0.1:5173>. Ready-to-use GLBs are included; Blender is only ne
 | WASD / arrow keys               | Pan camera                                     |
 | Mouse wheel                     | Smooth zoom                                    |
 | Middle-button drag / touch drag | Pan camera                                     |
-| Click harvester                 | Select                                         |
+| Click harvester / H-01 or H-02  | Select                                         |
 | Click empty terrain / Esc       | Deselect                                       |
 | F / Locate / minimap            | Select and center harvester                    |
 | Space / pause button            | Pause or resume simulation                     |
@@ -86,10 +86,10 @@ docs/                   Specification, architecture, asset workflow, validation 
 
 Gameplay tuning lives in `src/game/config.ts`. Grid dimensions and scene layout live in `assets/world.json`; regenerate assets after changing map dimensions. The default navigation grid is 64 × 64 at 2 m per cell. Terrain triangles and navigation share one exported heightfield.
 
-See [architecture and extension points](docs/architecture.md), [validation](docs/validation.md), and the [original specification](docs/specification.md).
+See [fleet, docking, and depletion](docs/fleet-and-docking.md), [architecture and extension points](docs/architecture.md), [validation](docs/validation.md), and the [original specification](docs/specification.md).
 
 ## Scope and limits
 
-This is a one-unit, one-building desktop browser prototype. All 3,660 minerals are finite; after mining and delivering everything, the harvester safely idles. Reload to start a new shift. There is no combat, construction, save/load, physics, or multi-unit avoidance. Dock reservation supports one active unit; a future fleet will need queueing and per-unit navigation clearance.
+This is a two-unit, one-building desktop browser prototype. All 3,660 minerals are finite; after mining and delivering everything, both harvesters safely idle. Reload to start a new shift. There is no combat, construction, save/load, or physics. The refinery uses a FIFO queue with distinct waiting bays, a reserved approach, fixed unloading pose, and reverse departure. Nearby units yield and replan with clearance; this is not a general crowd-navigation system. Holding a unit inside the port intentionally keeps the dock occupied until that unit resumes or drives clear.
 
 Portrait layouts and touch panning are supported, but multi-touch pinch zoom and full mobile controls are not implemented. Performance has been smoke-tested in Chromium; cross-browser and large-fleet performance are not yet benchmarked. The Three.js production chunk exceeds Vite's default 500 KB warning threshold; the canvas code is lazy-loaded separately from the HUD.

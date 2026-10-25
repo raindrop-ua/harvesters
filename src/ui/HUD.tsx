@@ -11,6 +11,10 @@ const labels: Record<HarvesterState, string> = {
   MOVE_TO_RESOURCE: 'Heading to deposit',
   HARVEST: 'Harvesting minerals',
   CARGO_FULL: 'Cargo secured',
+  MOVE_TO_QUEUE: 'Heading to waiting bay',
+  WAIT_FOR_DOCK: 'Waiting for refinery',
+  UNDOCK: 'Reversing out',
+  LEAVE_REFINERY: 'Clearing the approach',
   MOVE_TO_REFINERY: 'Returning to refinery',
   DOCK: 'Docking at K-01',
   UNLOAD: 'Unloading cargo',
@@ -24,7 +28,9 @@ function clock(time: number) {
 export function HUD() {
   const game = useGame(),
     view = useUI((s) => s.view),
-    selected = useUI((s) => s.selected)
+    selectedId = useUI((s) => s.selectedId)
+  const selected = view.units.find((u) => u.id === selectedId)
+  const unit = selected ?? view.units[0]
   const paused = useUI((s) => s.paused),
     speed = useUI((s) => s.speed),
     developerOpen = useUI((s) => s.developerOpen)
@@ -49,16 +55,21 @@ export function HUD() {
       if (event.code === 'KeyP')
         game.ui.setState((s) => ({ showPaths: !s.showPaths }))
       if (event.code === 'Escape')
-        game.ui.setState({ selected: false, developerOpen: false })
+        game.ui.setState({ selectedId: null, developerOpen: false })
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
   }, [game])
 
-  const moving = ['MOVE_TO_RESOURCE', 'MOVE_TO_REFINERY', 'MOVE'].includes(
-    view.state,
-  )
-  const progress = (view.cargo / view.capacity) * 100
+  const moving = [
+    'MOVE_TO_RESOURCE',
+    'MOVE_TO_QUEUE',
+    'MOVE_TO_REFINERY',
+    'UNDOCK',
+    'LEAVE_REFINERY',
+    'MOVE',
+  ].includes(unit.state)
+  const progress = (unit.cargo / unit.capacity) * 100
   return (
     <div className="hud">
       <header className="topbar">
@@ -131,6 +142,19 @@ export function HUD() {
           <small>SOUTHERN BASIN / 07</small>
         </div>
       </div>
+      <div className="dock-status" data-testid="dock-status">
+        <span className={`live-dot ${view.dockOwner ? 'is-paused' : ''}`} />
+        <span>
+          {view.dockOwner
+            ? `K-01 · H-${view.dockOwner.slice(-2)} in port`
+            : 'K-01 · dock clear'}
+        </span>
+        {view.queue.filter((id) => id !== view.dockOwner).length > 0 && (
+          <b>
+            {view.queue.filter((id) => id !== view.dockOwner).length} WAITING
+          </b>
+        )}
+      </div>
       {paused && (
         <div className="paused-banner">
           <Icon name="pause" size={15} /> Time stands still{' '}
@@ -141,6 +165,22 @@ export function HUD() {
 
       <footer className="bottom-hud">
         <div className="unit-area">
+          <div className="fleet-switcher" aria-label="Harvester fleet">
+            {view.units.map((u) => (
+              <button
+                key={u.id}
+                aria-label={`Select harvester H-${u.id.slice(-2)}`}
+                aria-pressed={selectedId === u.id}
+                onClick={() => game.ui.setState({ selectedId: u.id })}
+              >
+                <span
+                  className={`live-dot ${u.state === 'WAIT_FOR_DOCK' ? 'is-paused' : ''}`}
+                />
+                <b>H-{u.id.slice(-2)}</b>
+                <span>{Math.floor(u.cargo + 1e-6)} M</span>
+              </button>
+            ))}
+          </div>
           {selected ? (
             <section
               className="unit-card panel"
@@ -148,12 +188,13 @@ export function HUD() {
             >
               <div className="panel-topline">
                 <span className="eyebrow">
-                  <span className="tiny-square" /> UNIT 01 · INDUSTRIAL
+                  <span className="tiny-square" /> UNIT {unit.id.slice(-2)} ·
+                  INDUSTRIAL
                 </span>
                 <button
                   className="icon-button small"
                   aria-label="Deselect harvester"
-                  onClick={() => game.ui.setState({ selected: false })}
+                  onClick={() => game.ui.setState({ selectedId: null })}
                 >
                   <Icon name="close" size={15} />
                 </button>
@@ -161,7 +202,7 @@ export function HUD() {
               <div className="unit-heading">
                 <div>
                   <h2>The workhorse.</h2>
-                  <p>H-01 TRACKED HARVESTER</p>
+                  <p>H-{unit.id.slice(-2)} TRACKED HARVESTER</p>
                 </div>
                 <div className="unit-emblem">
                   <Icon name="tractor" size={32} />
@@ -169,18 +210,21 @@ export function HUD() {
               </div>
               <div className="unit-state">
                 <span
-                  className={`live-dot ${view.state === 'STOPPED' ? 'is-paused' : ''}`}
+                  className={`live-dot ${unit.state === 'STOPPED' ? 'is-paused' : ''}`}
                 />
-                <span data-testid="unit-state">{labels[view.state]}</span>
+                <span data-testid="unit-state">{labels[unit.state]}</span>
                 <span className="state-wave">
-                  {moving ? '↗' : view.state === 'HARVEST' ? '⟐' : '—'}
+                  {moving ? '↗' : unit.state === 'HARVEST' ? '⟐' : '—'}
                 </span>
               </div>
+              <p className="unit-message" data-testid="unit-message">
+                {unit.message}
+              </p>
               <div className="cargo-label">
                 <span>CARGO BAY</span>
                 <span>
-                  <b data-testid="cargo">{Math.floor(view.cargo + 1e-6)}</b> /{' '}
-                  {view.capacity} M
+                  <b data-testid="cargo">{Math.floor(unit.cargo + 1e-6)}</b> /{' '}
+                  {unit.capacity} M
                 </span>
               </div>
               <div
@@ -188,8 +232,8 @@ export function HUD() {
                 role="progressbar"
                 aria-label="Harvester cargo"
                 aria-valuemin={0}
-                aria-valuemax={view.capacity}
-                aria-valuenow={Math.floor(view.cargo + 1e-6)}
+                aria-valuemax={unit.capacity}
+                aria-valuenow={Math.floor(unit.cargo + 1e-6)}
               >
                 <div style={{ width: `${progress}%` }} />
               </div>
@@ -199,14 +243,14 @@ export function HUD() {
                 </button>
                 <button
                   onClick={() =>
-                    game.command(view.state === 'STOPPED' ? 'AUTO' : 'STOP')
+                    game.command(unit.state === 'STOPPED' ? 'AUTO' : 'STOP')
                   }
                 >
                   <Icon
-                    name={view.state === 'STOPPED' ? 'play' : 'pause'}
+                    name={unit.state === 'STOPPED' ? 'play' : 'pause'}
                     size={13}
                   />
-                  {view.state === 'STOPPED' ? 'Autopilot' : 'Hold'}
+                  {unit.state === 'STOPPED' ? 'Autopilot' : 'Hold'}
                 </button>
                 <button
                   onClick={() => game.command('RETURN_CARGO')}
@@ -238,7 +282,7 @@ export function HUD() {
         <div className="field-notes">
           <span className="eyebrow">THE SHIFT CONTINUES</span>
           <p>
-            A small machine.
+            A small crew.
             <br />
             <em>A vast desert.</em>
           </p>
@@ -263,7 +307,7 @@ export function HUD() {
         </div>
       </footer>
       <div className="screen-reader-status" role="status" aria-live="polite">
-        {paused ? 'Simulation paused.' : ''} {labels[view.state]}.{' '}
+        {paused ? 'Simulation paused.' : ''} {labels[unit.state]}.{' '}
         {view.deliveries} deliveries completed.
       </div>
     </div>

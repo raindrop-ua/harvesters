@@ -7,7 +7,7 @@ export function DebugOverlay() {
   const game = useGame(),
     showGrid = useUI((s) => s.showGrid),
     showPaths = useUI((s) => s.showPaths)
-  const path = useUI((s) => s.view.path)
+  const units = useUI((s) => s.view.units)
   const revision = useUI((s) => s.view.gridRevision)
   const grid = game.world.grid
   const geometry = useMemo(() => {
@@ -54,19 +54,23 @@ export function DebugOverlay() {
           />
         </lineSegments>
       )}
-      {showPaths && path.length > 1 && (
-        <Line
-          points={path.map((p) => {
-            const w = grid.gridToWorld(p)
-            return [w.x, w.y + 0.25, w.z]
-          })}
-          color="#c7ffef"
-          lineWidth={1.4}
-          dashed
-          dashSize={0.45}
-          gapSize={0.3}
-        />
-      )}
+      {showPaths &&
+        units
+          .filter((u) => u.path.length > 1)
+          .map((u, i) => (
+            <Line
+              key={u.id}
+              points={u.path.map((p) => {
+                const w = grid.gridToWorld(p)
+                return [w.x, w.y + 0.25, w.z]
+              })}
+              color={i === 0 ? '#c7ffef' : '#ffe9a7'}
+              lineWidth={1.4}
+              dashed
+              dashSize={0.45}
+              gapSize={0.3}
+            />
+          ))}
     </>
   )
 }

@@ -3,10 +3,11 @@ import { useFrame } from '@react-three/fiber'
 import { InstancedMesh, Mesh, Object3D } from 'three'
 import { useGame } from '../../app/GameContext'
 import { useModel } from '../models'
+import type { Harvester } from '../../game/types'
 
 const COUNT = 22
 /** Both particle geometries come from effects.blend; instances only animate their transforms. */
-export function Particles() {
+export function Particles({ unit }: { unit: Harvester }) {
   const game = useGame(),
     model = useModel('effects')
   const dust = model.getObjectByName('DustParticle') as Mesh
@@ -15,7 +16,7 @@ export function Particles() {
     crystalRef = useRef<InstancedMesh>(null)
   const dummy = useMemo(() => new Object3D(), [])
   useFrame(() => {
-    const u = game.world.unit,
+    const u = unit,
       time = game.world.time
     for (let i = 0; i < COUNT; i++) {
       const phase = (time * 0.8 + i / COUNT) % 1
@@ -38,7 +39,7 @@ export function Particles() {
       dustRef.current?.setMatrixAt(i, dummy.matrix)
       const extracting = u.state === 'HARVEST',
         unloading = u.state === 'UNLOAD'
-      const forward = extracting ? 3.3 + phase : -1 + phase
+      const forward = extracting ? 3.3 + phase : 2.3 + phase * 1.4
       dummy.position.set(
         u.position.x +
           Math.sin(u.heading) * forward +

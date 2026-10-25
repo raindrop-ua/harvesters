@@ -12,18 +12,21 @@ export class World {
   readonly navigation: Pathfinder
   readonly economy = new Economy()
   readonly deposits: Deposit[]
-  readonly unit: Harvester
+  readonly units: Harvester[]
   readonly refineryPosition: Position
   refinery: ResourceReceiver | undefined
   time = 0
   deliveries = 0
   extracted = 0
 
-  constructor(readonly settings: HarvesterConfig = { ...config.harvester }) {
+  constructor(
+    readonly settings: HarvesterConfig = { ...config.harvester },
+    spawns = layout.harvesters,
+  ) {
     this.grid = new Grid()
     this.navigation = new Pathfinder(this.grid)
     const ref = layout.refinery
-    this.refinery = new Refinery(ref.dock, this.economy)
+    this.refinery = new Refinery(ref, this.economy)
     this.grid.occupy(ref, ref.width, ref.depth, this.refinery.id, 'building')
     this.refineryPosition = {
       x: (ref.x + ref.width / 2) * this.grid.cellSize - this.grid.halfSize,
@@ -51,24 +54,28 @@ export class World {
         scale: d.scale,
       }
     })
-    const position = this.grid.gridToWorld(layout.harvester)
-    this.unit = {
-      id: 'harvester-01',
-      position,
-      previousPosition: { ...position },
-      heading: Math.PI,
-      previousHeading: Math.PI,
-      speed: 0,
-      state: 'IDLE',
-      stateTime: 0,
-      cargo: 0,
-      capacity: settings.capacity,
-      resourceType: 'mineral',
-      path: [],
-      pathIndex: 0,
-      autonomous: true,
-      retryAt: 0,
-      message: 'Systems online',
-    }
+    this.units = spawns.map((definition) => {
+      const position = this.grid.gridToWorld(definition)
+      return {
+        id: definition.id,
+        position,
+        previousPosition: { ...position },
+        heading: Math.PI,
+        previousHeading: Math.PI,
+        speed: 0,
+        state: 'IDLE',
+        stateTime: 0,
+        cargo: 0,
+        capacity: settings.capacity,
+        resourceType: 'mineral',
+        path: [],
+        pathIndex: 0,
+        autonomous: true,
+        retryAt: 0,
+        message: 'Systems online',
+        blockedTime: 0,
+        deliveries: 0,
+      }
+    })
   }
 }

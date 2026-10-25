@@ -10,8 +10,8 @@ Validated locally with Node 24.18.0, Blender 5.2.3 LTS, React 19.3.1, R3F 9.8.2,
 - Strict TypeScript type checking.
 - ESLint.
 - Simulation/rendering import boundaries and Blender-only world-geometry guard.
-- **21 deterministic Node-only tests**, including grid conversions, exact triangle heights, overlapping occupancy, A* obstacles/costs/unreachable goals, all harvesting states, capacity, partial-load depletion, economy conservation, missing refineries, blocked docks, invalidated paths, commands, dock reservations, FPS-independent scheduling, and bounded catch-up.
-- A full-map simulation mines and delivers all **3,660 minerals**, then idles with no resource loss.
+- **29 deterministic Node-only tests**, including grid conversions, exact triangle heights, overlapping occupancy, A* obstacles/costs/unreachable goals, all harvesting states, capacity, partial-load depletion, economy conservation, missing refineries, blocked docks, invalidated paths, commands, dock reservations, FPS-independent scheduling, and bounded catch-up.
+- A full-map fleet simulation mines and delivers all **3,660 minerals**, then both units idle with no resource loss or overlapping centers.
 - GLB structure, required animation nodes, Blender provenance, and all **4,225 terrain vertex heights** match navigation data.
 - Production build.
 
@@ -31,6 +31,8 @@ Chromium at 1440 × 1000 and 390 × 844:
 - Grid/path debug controls and postprocessing settings work; disabling effects retains a visible canvas.
 - Developer panel fits the narrow viewport; document width does not exceed the viewport.
 - No JavaScript errors in the final clean playtest.
+- Two-unit selection, independent Hold/Autopilot commands, real FIFO waiting with cargo retained, fixed nose-first unloading, reverse departure, and continued work by both units were observed.
+- Mineral labels showed intermediate percentages and grades; individual authored prisms visibly receded.
 
 The built application was also served with `npm run preview -- --port 4173`. It completed a delivery of 120 minerals, retained a working canvas through repeated selection and postprocessing toggles, and made no external resource requests. Final desktop and portrait screenshots were captured from this production preview.
 
@@ -40,4 +42,4 @@ Screenshots from the local run are stored under ignored `artifacts/`, including 
 
 The build emits Vite's advisory warning for the approximately 704 KB minified Three.js chunk (about 182 KB gzip). The scene is lazy-loaded and the engine is separately cached; the warning is retained rather than hidden by increasing the budget.
 
-This pass is not a large-fleet benchmark or a Safari/Firefox certification. Desktop controls are primary. Touch panning and a responsive HUD exist, but pinch zoom, multi-unit collision avoidance, and dock queueing are outside this slice.
+This pass is not a large-fleet benchmark or a Safari/Firefox certification. Desktop controls are primary. Touch panning and a responsive HUD exist, but pinch zoom, multi-unit collision avoidance, and large-fleet crowd navigation are outside this slice. The two-unit FIFO dock queue is implemented and tested.

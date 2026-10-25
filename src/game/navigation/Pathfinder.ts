@@ -54,7 +54,12 @@ class Frontier {
 }
 
 export interface NavigationService {
-  findPath(start: GridPosition, goal: GridPosition): GridPosition[] | null
+  findPath(
+    start: GridPosition,
+    goal: GridPosition,
+    blocked?: ReadonlySet<number>,
+    firstStepAllowed?: (next: GridPosition) => boolean,
+  ): GridPosition[] | null
 }
 
 export class Pathfinder implements NavigationService {
@@ -63,7 +68,12 @@ export class Pathfinder implements NavigationService {
     readonly diagonal = true,
   ) {}
 
-  findPath(start: GridPosition, goal: GridPosition): GridPosition[] | null {
+  findPath(
+    start: GridPosition,
+    goal: GridPosition,
+    blocked?: ReadonlySet<number>,
+    firstStepAllowed?: (next: GridPosition) => boolean,
+  ): GridPosition[] | null {
     const grid = this.grid
     if (!grid.isWalkable(start) || !grid.isWalkable(goal)) return null
     const width = grid.width,
@@ -72,6 +82,7 @@ export class Pathfinder implements NavigationService {
     const end = key(goal),
       first = key(start)
     if (first === end) return []
+    if (blocked?.has(end)) return null
     const costs = new Float64Array(size).fill(Infinity)
     const previous = new Int32Array(size).fill(-1)
     const frontier = new Frontier()
@@ -108,6 +119,16 @@ export class Pathfinder implements NavigationService {
       for (const [dx, dz] of directions) {
         const next = { x: from.x + dx, z: from.z + dz }
         if (!grid.canStep(from, next, this.diagonal)) continue
+        if (node.index === first && firstStepAllowed && !firstStepAllowed(next))
+          continue
+        if (blocked?.has(key(next))) continue
+        if (
+          dx &&
+          dz &&
+          (blocked?.has(key({ x: from.x, z: next.z })) ||
+            blocked?.has(key({ x: next.x, z: from.z })))
+        )
+          continue
         const index = key(next),
           cell = grid.cells[index]
         const cost = node.cost + (dx && dz ? Math.SQRT2 : 1) * cell.movementCost
