@@ -1,9 +1,11 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { InstancedMesh, Mesh, Object3D } from 'three'
+import { InstancedMesh, MathUtils, Mesh, Object3D } from 'three'
 import { useGame } from '../../app/GameContext'
 import { useModel } from '../models'
 import type { Harvester } from '../../game/types'
+import { angleDelta } from '../../game/simulation/Simulation'
+import { localForwardSpeed } from '../entities/harvesterMotion'
 
 const COUNT = 22
 /** Both particle geometries come from effects.blend; instances only animate their transforms. */
@@ -17,23 +19,28 @@ export function Particles({ unit }: { unit: Harvester }) {
   const dummy = useMemo(() => new Object3D(), [])
   useFrame(() => {
     const u = unit,
-      time = game.world.time
+      time = game.world.time,
+      alpha = game.loop.alpha,
+      positionX = MathUtils.lerp(u.previousPosition.x, u.position.x, alpha),
+      positionZ = MathUtils.lerp(u.previousPosition.z, u.position.z, alpha),
+      heading =
+        u.previousHeading + angleDelta(u.previousHeading, u.heading) * alpha,
+      signedSpeed = localForwardSpeed(u, game.loop.dt),
+      direction = signedSpeed < 0 ? -1 : 1
     for (let i = 0; i < COUNT; i++) {
       const phase = (time * 0.8 + i / COUNT) % 1
       const side = i % 2 ? -1 : 1
       const dx = side * (1.8 + phase * 1.0)
-      const dz = -1.5 - phase * 2.2
-      const x =
-        u.position.x + Math.cos(u.heading) * dx + Math.sin(u.heading) * dz
-      const z =
-        u.position.z - Math.sin(u.heading) * dx + Math.cos(u.heading) * dz
+      const dz = -direction * (1.5 + phase * 2.2)
+      const x = positionX + Math.cos(heading) * dx + Math.sin(heading) * dz
+      const z = positionZ - Math.sin(heading) * dx + Math.cos(heading) * dz
       dummy.position.set(
         x,
         game.world.grid.heightAt(x, z) + phase * 0.8 + 0.1,
         z,
       )
       dummy.scale.setScalar(
-        u.speed > 0.4 ? Math.sin(phase * Math.PI) * 0.22 : 0,
+        Math.abs(signedSpeed) > 0.4 ? Math.sin(phase * Math.PI) * 0.22 : 0,
       )
       dummy.updateMatrix()
       dustRef.current?.setMatrixAt(i, dummy.matrix)
@@ -62,6 +69,7 @@ export function Particles({ unit }: { unit: Harvester }) {
   return (
     <>
       <instancedMesh
+        name={`Dust-${unit.id}`}
         ref={dustRef}
         args={[dust.geometry, dust.material, COUNT]}
         frustumCulled={false}

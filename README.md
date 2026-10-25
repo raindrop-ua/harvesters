@@ -41,6 +41,8 @@ Seven background tracks play in order and repeat the playlist, starting with you
 
 Resting mineral fields regenerate **12 M per simulation minute**, up to their original capacity. Autonomous harvesters wait for **24 M** before setting out again, then resume without player input. Regeneration freezes with the simulation and follows its speed setting. Rates and dispatch reserve are configurable in `src/game/config.ts`.
 
+Harvester bodies gently pitch on acceleration and braking, then settle through a damped suspension animation while the tracks stay grounded. Reverse travel mirrors the response and sends dust from the front ends of the tracks. Presentation tuning lives in `src/rendering/entities/harvesterMotion.ts`.
+
 ## Development
 
 ```sh
