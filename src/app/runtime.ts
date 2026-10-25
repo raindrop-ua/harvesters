@@ -2,6 +2,8 @@ import { createStore } from 'zustand/vanilla'
 import { config } from '../game/config'
 import { FixedLoop } from '../game/core/FixedLoop'
 import { Simulation } from '../game/simulation/Simulation'
+import { SelectionVoice } from '../audio/SelectionVoice'
+import { BackgroundMusic } from '../audio/BackgroundMusic'
 import type { EntityId, GridPosition, HarvesterState } from '../game/types'
 
 export interface PostProcessingSettings {
@@ -47,6 +49,8 @@ export interface UIState {
 
 /** Owns browser scheduling and the low-frequency UI bridge; never owned by the canvas. */
 export class GameRuntime {
+  constructor(private readonly selectionVoice = new SelectionVoice()) {}
+  readonly music = new BackgroundMusic()
   readonly labelElements = new Map<EntityId, HTMLDivElement>()
   readonly simulation = new Simulation()
   readonly loop = new FixedLoop(this.simulation)
@@ -118,15 +122,48 @@ export class GameRuntime {
       raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
-    return () => cancelAnimationFrame(raf)
+    const visibility = () => {
+      if (document.hidden) this.selectionVoice.stop()
+      this.music.setHidden(document.hidden)
+    }
+    const activateMusic = (event: Event) => {
+      if (
+        event.target instanceof Element &&
+        event.target.closest('[data-music-controls]')
+      )
+        return
+      if (
+        event instanceof KeyboardEvent &&
+        (event.repeat || event.ctrlKey || event.metaKey || event.altKey)
+      )
+        return
+      this.music.activate()
+    }
+    this.music.setHidden(document.hidden)
+    window.addEventListener('pointerdown', activateMusic, true)
+    window.addEventListener('keydown', activateMusic, true)
+    document.addEventListener('visibilitychange', visibility)
+    return () => {
+      cancelAnimationFrame(raf)
+      document.removeEventListener('visibilitychange', visibility)
+      window.removeEventListener('pointerdown', activateMusic, true)
+      window.removeEventListener('keydown', activateMusic, true)
+      this.selectionVoice.stop()
+      this.music.stop()
+    }
+  }
+  selectUnit(id: EntityId): void {
+    if (!this.world.units.some((unit) => unit.id === id)) return
+    this.ui.setState({ selectedId: id })
+    this.selectionVoice.play()
   }
   focusUnit(
     id = this.ui.getState().selectedId ?? this.world.units[0].id,
   ): void {
     const u = this.world.units.find((unit) => unit.id === id)
     if (!u) return
+    this.selectUnit(id)
     this.ui.setState((s) => ({
-      selectedId: id,
       focus: {
         x: u.position.x,
         z: u.position.z,

@@ -4,6 +4,7 @@ import type { HarvesterState } from '../game/types'
 import { DeveloperPanel } from './DeveloperPanel'
 import { MiniMap } from './MiniMap'
 import { Icon } from './Icon'
+import { MusicControls } from './MusicControls'
 
 const labels: Record<HarvesterState, string> = {
   IDLE: 'Standing by',
@@ -162,6 +163,7 @@ export function HUD() {
         </div>
       )}
       <DeveloperPanel />
+      <MusicControls />
 
       <footer className="bottom-hud">
         <div className="unit-area">
@@ -171,7 +173,7 @@ export function HUD() {
                 key={u.id}
                 aria-label={`Select harvester H-${u.id.slice(-2)}`}
                 aria-pressed={selectedId === u.id}
-                onClick={() => game.ui.setState({ selectedId: u.id })}
+                onClick={() => game.selectUnit(u.id)}
               >
                 <span
                   className={`live-dot ${u.state === 'WAIT_FOR_DOCK' ? 'is-paused' : ''}`}

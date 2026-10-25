@@ -16,6 +16,8 @@ export function Icon({
     | 'tractor'
     | 'return'
     | 'compass'
+    | 'next'
+    | 'playlist'
   size?: number
   style?: CSSProperties
 }) {
@@ -38,6 +40,18 @@ export function Icon({
       </>
     ),
     play: <path d="m8 5 11 7-11 7Z" />,
+    next: (
+      <>
+        <path d="m5 5 10 7-10 7Z" />
+        <path d="M19 5v14" />
+      </>
+    ),
+    playlist: (
+      <>
+        <path d="M4 6h13M4 11h13M4 16h8" />
+        <path d="m17 15 4 3-4 3Z" />
+      </>
+    ),
     settings: (
       <>
         <path d="M4 7h16M4 17h16" />

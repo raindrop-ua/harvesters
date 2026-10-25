@@ -35,6 +35,10 @@ Open <http://127.0.0.1:5173>. Ready-to-use GLBs are included; Blender is only ne
 
 The simulation starts when assets are ready and pauses in hidden tabs. The camera stays usable while the simulation is paused. Manual MOVE and targeted HARVEST commands are supported by the tested command API; right-click movement is deliberately not exposed in the default UI.
 
+Selecting a harvester plays one of four random **“Yes sir!”** acknowledgements, without consecutive repeats or overlapping voices. The initial selection stays silent. The supplied ElevenLabs MP3s are grouped under `public/audio/voices/harvester/selection/`.
+
+Seven background tracks play in order and repeat the playlist, starting with your first action. The **FIELD RADIO** panel offers Play/Pause, Next, volume, and song selection. Music defaults to 25% volume and pauses in hidden tabs. Named assets live in `public/audio/music/`; see [game audio](docs/audio.md) for titles, source mappings, and playback behavior.
+
 ## Development
 
 ```sh
@@ -71,6 +75,7 @@ Blender is detected from PATH, the standard macOS application, or `BLENDER_BIN`.
 assets/world.json       Shared map layout and generation seed
 assets/blender/         Editable .blend sources
 public/models/          Optimized runtime GLBs
+public/audio/           Local music playlist and unit voice takes
 scripts/blender/        Reproducible Blender authoring/export scripts
 src/game/               Pure TypeScript gameplay; no React, Three.js, or Zustand
   navigation/           Logical grid, occupancy, exact height sampling, deterministic A*
@@ -79,6 +84,7 @@ src/game/               Pure TypeScript gameplay; no React, Three.js, or Zustand
   economy/              Resource balances and reservable refinery receiver
   core/                 Bounded 20 Hz fixed-step clock
 src/app/                Browser scheduling, runtime ownership, low-frequency Zustand bridge
+src/audio/              Independent music and selection-voice channels
 src/rendering/          R3F scene, GLB instances, interpolation, camera, visual effects
 src/ui/                 DOM HUD, selection information, minimap, developer controls
 docs/                   Specification, architecture, asset workflow, validation evidence
