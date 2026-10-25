@@ -9,6 +9,7 @@ import { angleDelta } from '../../game/simulation/Simulation'
 import type { Deposit, Harvester } from '../../game/types'
 import { useModel } from '../models'
 import { crystalStage } from './mineralVisuals'
+import { RefinerySmoke } from '../effects/RefinerySmoke'
 import {
   HARVESTER_PRESENTATION,
   HarvesterSuspension,
@@ -76,6 +77,18 @@ export function RefineryModel() {
       lamp.visible = !unloading || Math.sin(clock.elapsedTime * 8) > -0.2
     }
   })
+  return (
+    <>
+      <primitive object={model} dispose={null} position={[p.x, p.y, p.z]} />
+      <RefinerySmoke outlet={model.getObjectByName('SmokeOutlet')!} />
+    </>
+  )
+}
+
+export function CourtyardModel() {
+  const game = useGame(),
+    model = useModel('courtyard'),
+    p = game.world.courtyardPosition
   return <primitive object={model} dispose={null} position={[p.x, p.y, p.z]} />
 }
 

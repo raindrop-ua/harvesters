@@ -148,6 +148,17 @@ def export(name):
                               export_lights=False, export_extras=True, check_existing=False)
 
 
+def add_smoke_outlet():
+    """An editable marker at the taller stack lip; no runtime chimney offsets."""
+    if bpy.data.objects.get("SmokeOutlet"):
+        return
+    outlet = bpy.data.objects.new("SmokeOutlet", None)
+    bpy.context.collection.objects.link(outlet)
+    outlet.location = xyz((-4.1, 8.65, -3.0))
+    outlet.empty_display_size = 0.35
+    outlet["purpose"] = "Refinery unloading smoke emitter"
+
+
 def harvester():
     reset("Harvester / modular industrial crawler")
     m = palette()
@@ -241,7 +252,100 @@ def refinery():
     static.append(label("K—01", (-1.2, 5.88, 1.5), 0.9, m["dark"]))
     join_group("ProcessingStructure", static)
     lamp = block("DockStatusLight", (-1.0, 3.6, 3.31), (1.3, 0.13, 0.08), m["cyan"], 0.02)
+    add_smoke_outlet()
     export("refinery")
+
+
+def courtyard():
+    reset("Courtyard / CY-01 construction yard")
+    m = palette()
+    # The entire model fits its 16 x 14 m navigation footprint. A deep plinth
+    # accommodates the existing sand slope without changing the terrain mesh.
+    structure = [
+        block("Reinforced foundation", (0, -0.35, 0), (15.6, 1.3, 13.6), m["steel"], 0.15),
+        block("Workshop hall", (0.6, 2.5, -1.8), (9.4, 4.4, 7.8), m["ivory"], 0.24),
+        block("Roof shadow rim", (0.6, 4.75, -1.8), (9.8, 0.25, 8.1), m["dark"], 0.08),
+        block("Left workshop roof", (-1.8, 5.01, -1.8), (4.9, 0.3, 8.05), m["light"], 0.09),
+        block("Right workshop roof", (3.0, 5.01, -1.8), (4.9, 0.3, 8.05), m["light"], 0.09),
+        block("Roof faction stripe", (-2.8, 5.18, -1.8), (0.65, 0.035, 7.95), m["orange"], 0.01),
+        block("Front apron", (0, 0.34, 4.3), (12.4, 0.08, 3.65), m["dark"], 0.08),
+        block("Command tower", (-5.55, 3.0, -2.9), (3.3, 5.4, 4.5), m["ivory"], 0.22),
+        block("Command glazing", (-5.55, 5.05, -0.57), (2.85, 1.05, 0.12), m["glass"], 0.06),
+        block("Side glazing", (-7.24, 5.05, -2.8), (0.1, 1.05, 2.7), m["glass"], 0.03),
+        block("Command roof", (-5.55, 5.84, -2.9), (3.65, 0.28, 4.8), m["light"], 0.1),
+        block("Command faction band", (-7.25, 3.4, -2.9), (0.09, 0.4, 4.25), m["orange"], 0.015),
+        block("Office door", (-5.6, 1.65, -0.57), (1.25, 2.5, 0.13), m["dark"], 0.04),
+    ]
+    for x in (-1.75, 2.95):
+        structure += [
+            block("Workshop bay recess", (x, 2.15, 2.16), (3.75, 3.55, 0.18), m["dark"], 0.06),
+            block("Armored rolling door", (x, 2.1, 2.3), (3.4, 3.25, 0.13), m["steel"], 0.04),
+            block("Bay lintel", (x, 4.12, 2.37), (4.05, 0.45, 0.44), m["orange"], 0.06),
+        ]
+        for y in (0.8, 1.3, 1.8, 2.3, 2.8, 3.3):
+            structure.append(block("Door slat", (x, y, 2.4), (3.35, 0.07, 0.06), m["dark"], 0.01))
+        for side in (-1, 1):
+            structure.append(block("Apron bay marking", (x + side * 1.85, 0.39, 4.25), (0.1, 0.025, 3.2), m["light"], 0.01))
+    for z in (-4.8, -3.8, -2.8):
+        structure.append(block("Roof ventilation", (2.5, 5.25, z), (2.0, 0.22, 0.25), m["steel"], 0.04))
+    structure.append(label("CY—01", (0.1, 5.19, -0.25), 0.95, m["dark"]))
+    join_group("CourtyardStructure", structure)
+
+    crane = []
+    for x in (-5.0, 6.4):
+        crane += [
+            block("Gantry foot", (x, 0.55, 3.8), (1.1, 0.4, 1.3), m["dark"], 0.08),
+            block("Gantry column", (x, 3.9, 3.8), (0.6, 6.5, 0.65), m["orange"], 0.07),
+            block("Gantry column collar", (x, 1.5, 3.8), (0.73, 0.7, 0.78), m["light"], 0.04),
+        ]
+    crane += [
+        block("Gantry bridge lower", (0.7, 6.75, 3.8), (12.1, 0.26, 0.75), m["orange"], 0.04),
+        block("Gantry bridge upper", (0.7, 7.65, 3.8), (12.1, 0.26, 0.75), m["orange"], 0.04),
+        block("Hoist carriage", (2.35, 6.9, 3.8), (1.6, 0.6, 1.1), m["dark"], 0.12),
+        cylinder("Hoist drum", (2.35, 6.5, 3.8), 0.27, 1.0, m["steel"], "x", vertices=12),
+        cylinder("Hoist cable", (2.35, 4.9, 3.8), 0.055, 2.8, m["dark"], vertices=8),
+        block("Hoist hook block", (2.35, 3.42, 3.8), (0.55, 0.6, 0.48), m["orange"], 0.08),
+    ]
+    for i in range(8):
+        a = Vector(xyz((-5.1 + i * 1.45, 6.85 if i % 2 == 0 else 7.55, 3.8)))
+        b = Vector(xyz((-5.1 + (i + 1) * 1.45, 7.55 if i % 2 == 0 else 6.85, 3.8)))
+        bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.1, depth=(b-a).length, location=(a+b)/2)
+        rod = bpy.context.object
+        rod.rotation_mode = "QUATERNION"
+        rod.rotation_quaternion = (b-a).to_track_quat("Z", "Y")
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+        crane.append(finish(rod, "Gantry diagonal brace", m["light"]))
+    join_group("GantryCrane", crane)
+
+    supplies = []
+    for x, z, h in [(-6.0, 2.3, 0.75), (-6.0, 4.35, 0.75), (-6.0, 4.35, 1.65)]:
+        supplies.append(block("Supply crate", (x, h + 0.3, z), (1.35, 0.85, 1.5), m["ivory"], 0.08))
+        for dx in (-0.45, 0.45):
+            supplies.append(block("Crate strap", (x + dx, h + 0.3, z), (0.11, 0.9, 1.56), m["orange"], 0.02))
+    for z in (-4.2, -3.4, -2.6):
+        supplies.append(cylinder("Spare beam bundle", (6.25, 0.7, z), 0.22, 1.7, m["steel"], "x", vertices=10))
+    join_group("SupplyStacks", supplies)
+    antenna = [
+        cylinder("Radio mast", (-5.6, 7.1, -3.6), 0.07, 2.4, m["dark"], vertices=8),
+        cylinder("Radio crossbar", (-5.6, 7.8, -3.6), 0.045, 1.8, m["steel"], "x", vertices=8),
+        cylinder("Mast beacon", (-5.6, 8.36, -3.6), 0.13, 0.2, m["lamp"], vertices=8),
+    ]
+    join_group("CommandAntenna", antenna)
+    export("courtyard")
+
+
+def smoke():
+    reset("Smoke / authored refinery plume")
+    mat = material("Smoke / warm ash", (0.42, 0.43, 0.39))
+    puffs = []
+    for p, radius in [((0, 0, 0), 0.7), ((0.38, 0.18, 0.04), 0.52), ((-0.3, 0.12, -0.16), 0.46)]:
+        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=radius, location=xyz(p))
+        obj = finish(bpy.context.object, "Smoke lobe", mat)
+        for polygon in obj.data.polygons:
+            polygon.use_smooth = True
+        puffs.append(obj)
+    join_group("SmokeParticle", puffs)
+    export("smoke")
 
 
 def minerals():
@@ -389,8 +493,9 @@ def effects():
     export("effects")
 
 
-generators = {"harvester": harvester, "refinery": refinery, "minerals": minerals, "rocks": rocks, "terrain": terrain, "effects": effects}
-names = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else list(generators)
-for name in names:
-    generators[name]()
-print("HARVESTER: all Blender sources, GLBs and shared terrain metadata generated.")
+if __name__ == "__main__":
+    generators = {"harvester": harvester, "refinery": refinery, "courtyard": courtyard, "smoke": smoke, "minerals": minerals, "rocks": rocks, "terrain": terrain, "effects": effects}
+    names = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else list(generators)
+    for name in names:
+        generators[name]()
+    print("HARVESTER: requested Blender sources, GLBs and shared terrain metadata generated.")

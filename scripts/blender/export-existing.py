@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 names = sys.argv[sys.argv.index("--") + 1:]
 if not names:
-    names = ["terrain", "harvester", "refinery", "minerals", "rocks", "effects"]
+    names = ["terrain", "harvester", "refinery", "courtyard", "smoke", "minerals", "rocks", "effects"]
 
 for name in names:
     bpy.ops.wm.open_mainfile(filepath=str(ROOT / "assets/blender" / (name + ".blend")), load_ui=False)

@@ -31,6 +31,8 @@ export function LabelProjection() {
       const p = game.world.grid.gridToWorld(d.cell)
       place(d.id, p.x, p.y + 5.3 * d.scale, p.z)
     }
+    const yard = game.world.courtyardPosition
+    place('courtyard-01', yard.x, yard.y + 0.5, yard.z + 8.6)
   })
   return null
 }

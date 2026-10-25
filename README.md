@@ -6,7 +6,9 @@ A small crew. A vast desert.
 
 An RTS proof of concept for the browser, hosted at <https://harvesters.antonsizov.rocks/>. Search and social metadata are in `index.html`; the sharing cover is `public/og/harvester.jpg`. Crawler discovery files live in `public/robots.txt` and `public/sitemap.xml`.
 
-A playable desert RTS vertical slice: two autonomous tracked harvesters, one shared refinery, five slowly regenerating cyan mineral deposits, and an editable Blender-authored world. Each harvester finds resources, follows A* routes, mines, waits its turn, aligns nose first at one unloading point, unloads, and drives clear before the next unit enters. Deposits lose individual Blender-authored crystals as they are depleted and grow them back as they recover, with percentage, grade, and regrowth indicators.
+A playable desert RTS vertical slice: two autonomous tracked harvesters, one shared refinery, a construction yard, five slowly regenerating cyan mineral deposits, and an editable Blender-authored world. Each harvester finds resources, follows A* routes, mines, waits its turn, aligns nose first at one unloading point, unloads, and drives clear before the next unit enters. Deposits lose individual Blender-authored crystals as they are depleted and grow them back as they recover, with percentage, grade, and regrowth indicators.
+
+The **Courtyard / CY-01** has a workshop, overhead gantry crane, command block, antenna, and supply stacks. Its reserved 16 × 14 m footprint sits west of the refinery, leaving an 8 m passage for units. The refinery emits a light, drifting smoke plume from its taller chimney while accepting cargo; remaining smoke gently dissipates after unloading.
 
 ## Run
 
@@ -104,6 +106,6 @@ See [fleet, docking, and mineral regrowth](docs/fleet-and-docking.md), [architec
 
 ## Scope and limits
 
-This is a two-unit, one-building desktop browser prototype. The map starts with 3,660 minerals; slow regrowth provides continued income after the initial reserves run down. Reload to start a new shift. There is no combat, construction, save/load, or physics. The refinery uses a FIFO queue with distinct waiting bays, a reserved approach, fixed unloading pose, and reverse departure. Nearby units yield and replan with clearance; this is not a general crowd-navigation system. Holding a unit inside the port intentionally keeps the dock occupied until that unit resumes or drives clear.
+This is a two-unit, two-building desktop browser prototype. Courtyard is the placed construction-yard building; building placement and production controls are future work. The map starts with 3,660 minerals; slow regrowth provides continued income after the initial reserves run down. Reload to start a new shift. There is no combat, save/load, or physics. The refinery uses a FIFO queue with distinct waiting bays, a reserved approach, fixed unloading pose, and reverse departure. Nearby units yield and replan with clearance; this is not a general crowd-navigation system. Holding a unit inside the port intentionally keeps the dock occupied until that unit resumes or drives clear.
 
 Portrait layouts and touch panning are supported, but multi-touch pinch zoom and full mobile controls are not implemented. Performance has been smoke-tested in Chromium; cross-browser and large-fleet performance are not yet benchmarked. The Three.js production chunk exceeds Vite's default 500 KB warning threshold; the canvas code is lazy-loaded separately from the HUD.

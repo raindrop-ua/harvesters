@@ -14,6 +14,7 @@ export class World {
   readonly deposits: Deposit[]
   readonly units: Harvester[]
   readonly refineryPosition: Position
+  readonly courtyardPosition: Position
   refinery: ResourceReceiver | undefined
   time = 0
   deliveries = 0
@@ -34,6 +35,23 @@ export class World {
       x: (ref.x + ref.width / 2) * this.grid.cellSize - this.grid.halfSize,
       z: (ref.z + ref.depth / 2) * this.grid.cellSize - this.grid.halfSize,
       y: 0.12,
+    }
+    const yard = layout.courtyard
+    this.grid.occupy(yard, yard.width, yard.depth, yard.id, 'building')
+    let padHeight = -Infinity
+    for (let z = yard.z; z <= yard.z + yard.depth; z++)
+      for (let x = yard.x; x <= yard.x + yard.width; x++)
+        padHeight = Math.max(
+          padHeight,
+          this.grid.heightAt(
+            x * this.grid.cellSize - this.grid.halfSize,
+            z * this.grid.cellSize - this.grid.halfSize,
+          ),
+        )
+    this.courtyardPosition = {
+      x: (yard.x + yard.width / 2) * this.grid.cellSize - this.grid.halfSize,
+      z: (yard.z + yard.depth / 2) * this.grid.cellSize - this.grid.halfSize,
+      y: padHeight,
     }
     for (const [index, rock] of layout.rocks.entries()) {
       // A conservative footprint includes vehicle clearance around the authored silhouette.

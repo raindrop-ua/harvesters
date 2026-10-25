@@ -5,13 +5,34 @@
 | Editable source                  | Runtime export                | Important nodes                                                                                                                                             |
 | -------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `assets/blender/harvester.blend` | `public/models/harvester.glb` | `MainChassis`, `LeftTrackAssembly`, `RightTrackAssembly`, `LeftTrackTreads`, `RightTrackTreads`, `MiningRotor`, `MiningArms`, `CargoContainer`, `CargoFill` |
-| `assets/blender/refinery.blend`  | `public/models/refinery.glb`  | `ProcessingStructure`, `DockStatusLight`                                                                                                                    |
+| `assets/blender/refinery.blend`  | `public/models/refinery.glb`  | `ProcessingStructure`, `DockStatusLight`, `SmokeOutlet`                                                                                                     |
 | `assets/blender/terrain.blend`   | `public/models/terrain.glb`   | `DesertHeightfield`, `DesertHorizon`, `ScatteredPebbles`                                                                                                    |
 | `assets/blender/rocks.blend`     | `public/models/rocks.glb`     | `RockFormation`                                                                                                                                             |
 | `assets/blender/minerals.blend`  | `public/models/minerals.glb`  | `Crystal00` … `Crystal06`                                                                                                                                   |
 | `assets/blender/effects.blend`   | `public/models/effects.glb`   | `DustParticle`, `ExtractionParticle`, `SelectionRing`                                                                                                       |
 
 `.blend` and `.glb` files belong in version control. Blender backup files (`.blend1`) do not. No imported commercial assets or textures are used. Materials are authored with a shared palette, matte roughness, restrained emission, and no image textures.
+
+## Base expansion assets
+
+`assets/blender/courtyard.blend` exports `public/models/courtyard.glb`, with `CourtyardStructure`, `GantryCrane`, `SupplyStacks`, and `CommandAntenna`. `assets/blender/smoke.blend` exports the reusable `SmokeParticle` mesh in `public/models/smoke.glb`.
+
+Courtyard uses a ground-centered origin and a 16 × 14 m footprint from `assets/world.json`. Its solid foundation extends 1 m below the origin, seating the level workshop on existing sloping terrain. Runtime placement uses the maximum terrain height under the footprint; no terrain vertices are edited. Keep all meshes, including the crane and supplies, inside this footprint. The asset check verifies transformed GLB bounds against the dimensions.
+
+Generate only the new assets, leaving the other sources alone:
+
+```sh
+python3 scripts/export-assets.py --generate courtyard smoke
+node scripts/optimize-assets.mjs courtyard smoke
+```
+
+Add the editable chimney marker to an existing refinery without regenerating geometry:
+
+```sh
+python3 scripts/export-assets.py --add-smoke-outlet
+```
+
+This is idempotent and preserves an existing marker position. Move `SmokeOutlet` with the chimney when editing the source. New refinery generation includes it automatically. The current upgrade preserves every refinery mesh position, normal, and triangle index.
 
 ## Regenerate the initial art
 
@@ -64,4 +85,6 @@ The exporter extracts the edited heights into `src/game/data/terrain.json` and r
 
 glTF Transform deduplicates reusable data, welds identical vertices, and prunes unused data. It preserves the node hierarchy, animation pivots, emission extensions, and full-precision terrain positions. No lossy simplification, Draco, or texture decoding dependency is needed for this asset size. Provenance is retained in GLB extras as `sourceGenerator` and `sourceFile`.
 
-`npm run assets:check` validates GLB headers, Blender provenance, required harvester nodes, and every terrain/navigation vertex. Combined optimized GLBs are approximately 1.6 MB. The harvester is around 14k triangles and the refinery around 6k; a future large fleet should add LODs and measure draw calls before increasing detail.
+`npm run assets:check` validates GLB headers, Blender provenance, required animation/effect nodes, courtyard footprint bounds, and every terrain/navigation vertex. The eight optimized GLBs total approximately 2 MB. The harvester is around 14k triangles, refinery around 6k, courtyard around 9k, and each smoke puff 240 triangles; a future large fleet should add LODs and measure draw calls before increasing detail.
+
+Selective export and optimization touch only the requested assets.

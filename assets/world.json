@@ -2,6 +2,13 @@
   "seed": 1701,
   "width": 64,
   "cellSize": 2,
+  "courtyard": {
+    "id": "courtyard-01",
+    "x": 9,
+    "z": 30,
+    "width": 8,
+    "depth": 7
+  },
   "refinery": {
     "x": 21,
     "z": 26,

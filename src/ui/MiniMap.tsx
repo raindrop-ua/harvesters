@@ -20,7 +20,7 @@ export function MiniMap() {
       <svg
         viewBox="0 0 160 112"
         role="img"
-        aria-label="Sector map with refinery, deposits and two harvesters"
+        aria-label="Sector map with refinery, construction yard, deposits and two harvesters"
       >
         <defs>
           <pattern
@@ -65,13 +65,16 @@ export function MiniMap() {
               fill={d.amount > 0 ? '#72c7b8' : '#6c7862'}
             />
           ))}
-          <rect
-            x={map(-22)}
-            y={map(-12)}
-            width="15"
-            height="12.5"
-            fill="#d8c9a4"
-          />
+          {[layout.refinery, layout.courtyard].map((building, index) => (
+            <rect
+              key={index}
+              x={map(building.x * layout.cellSize - 64)}
+              y={map(building.z * layout.cellSize - 64)}
+              width={building.width * 2.5}
+              height={building.depth * 2.5}
+              fill={index === 0 ? '#d8c9a4' : '#b99b72'}
+            />
+          ))}
           {units.map((u) => (
             <g key={u.id}>
               {u.id === selectedId && (

@@ -4,14 +4,19 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions'
 import { readFile, stat } from 'node:fs/promises'
 
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS)
-for (const name of [
+const assetNames = [
   'terrain',
   'refinery',
+  'courtyard',
+  'smoke',
   'harvester',
   'minerals',
   'rocks',
   'effects',
-]) {
+]
+const requested = process.argv.slice(2)
+for (const name of requested.length ? requested : assetNames) {
+  if (!assetNames.includes(name)) throw new Error(`Unknown asset: ${name}`)
   const path = `public/models/${name}.glb`
   const before = (await stat(path)).size
   const document = await io.read(path)

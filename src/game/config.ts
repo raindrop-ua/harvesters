@@ -22,6 +22,7 @@ export const config = {
     busyDepositPenalty: 18,
   },
   camera: {
+    initialFocus: { x: -12, z: -3 },
     elevation: 55,
     azimuth: 40,
     speed: 30,
