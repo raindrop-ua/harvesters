@@ -1,7 +1,8 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useState } from 'react'
-import { Group, MathUtils } from 'three'
+import { Select } from '@react-three/postprocessing'
+import { Color, Group, MathUtils, Mesh, MeshStandardMaterial } from 'three'
 import { useGame, useUI } from '../../app/GameContext'
 import { layout } from '../../game/simulation/World'
 import { angleDelta } from '../../game/simulation/Simulation'
@@ -19,6 +20,9 @@ import {
 export function TerrainModel() {
   const model = useModel('terrain'),
     surface = useMapSurface()
+  // Keep the playable heightfield visible, with a clear edge against the black void.
+  const horizon = model.getObjectByName('DesertHorizon')
+  if (horizon) horizon.visible = false
   return <primitive object={model} dispose={null} {...surface} />
 }
 
@@ -41,8 +45,34 @@ export function RockModel({ index }: { index: number }) {
 
 export function MineralModel({ deposit }: { deposit: Deposit }) {
   const game = useGame(),
-    model = useModel('minerals')
+    source = useModel('minerals')
   const surface = useMapSurface({ kind: 'deposit', id: deposit.id })
+  const { model, glow } = useMemo(() => {
+    const model = source.clone(true)
+    // GLB instances share cached materials; retain three owned materials per field.
+    const materials = new Map<MeshStandardMaterial, MeshStandardMaterial>()
+    model.traverse((object) => {
+      if (!(object instanceof Mesh)) return
+      const own = (source: MeshStandardMaterial) => {
+        let material = materials.get(source)
+        if (!material) {
+          material = source.clone()
+          materials.set(source, material)
+        }
+        return material
+      }
+      object.material = Array.isArray(object.material)
+        ? object.material.map(own)
+        : own(object.material)
+    })
+    return {
+      model,
+      glow: [...materials.values()].map((material) => ({
+        material,
+        base: material.color.clone(),
+      })),
+    }
+  }, [source])
   const crystals = useMemo(
     () =>
       model.children
@@ -50,8 +80,22 @@ export function MineralModel({ deposit }: { deposit: Deposit }) {
         .sort((a, b) => a.name.localeCompare(b.name)),
     [model],
   )
+  const mint = useMemo(() => new Color('#65ead6'), [])
+  useEffect(
+    () => () => {
+      for (const { material } of glow) material.dispose()
+    },
+    [glow],
+  )
   const p = game.world.grid.gridToWorld(deposit.cell)
   useFrame(() => {
+    const time = game.world.time
+    const phase = deposit.cell.x * 0.73 + deposit.cell.z * 0.41
+    for (const [index, { material, base }] of glow.entries()) {
+      const shimmer = 0.5 + 0.5 * Math.sin(time * 0.65 + phase + index * 1.7)
+      material.emissive.lerpColors(base, mint, 0.1 + shimmer * 0.18)
+      material.emissiveIntensity = 0.35 + shimmer * 0.35
+    }
     const amount = deposit.amount / deposit.initialAmount
     for (let i = 0; i < crystals.length; i++) {
       const stage = crystalStage(amount, i, crystals.length)
@@ -61,10 +105,12 @@ export function MineralModel({ deposit }: { deposit: Deposit }) {
     model.scale.setScalar(deposit.scale * (0.55 + 0.45 * Math.sqrt(amount)))
   })
   return (
-    <group position={[p.x, p.y, p.z]} {...surface}>
-      <group rotation-y={deposit.cell.x * 1.7}>
-        <primitive object={model} dispose={null} />
-      </group>
+    <group name={deposit.id} position={[p.x, p.y, p.z]} {...surface}>
+      <Select enabled>
+        <group rotation-y={deposit.cell.x * 1.7}>
+          <primitive object={model} dispose={null} />
+        </group>
+      </Select>
     </group>
   )
 }
@@ -195,7 +241,10 @@ export function HarvesterModel({ unit }: { unit: Harvester }) {
           game.hoverMap('unit', event.point)
           setHovered(true)
         }}
-        onPointerOut={() => setHovered(false)}
+        onPointerOut={() => {
+          setHovered(false)
+          game.mapHover = null
+        }}
       >
         <primitive object={model} dispose={null}>
           <group

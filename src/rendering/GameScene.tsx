@@ -1,6 +1,13 @@
-import { Suspense, useEffect } from 'react'
+import { Suspense, useEffect, useMemo, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { ACESFilmicToneMapping, PCFSoftShadowMap, SRGBColorSpace } from 'three'
+import {
+  ACESFilmicToneMapping,
+  PCFSoftShadowMap,
+  SRGBColorSpace,
+  type DirectionalLight,
+  type HemisphereLight,
+} from 'three'
+import { Selection } from '@react-three/postprocessing'
 import { useGame } from '../app/GameContext'
 import { layout } from '../game/simulation/World'
 import {
@@ -30,6 +37,9 @@ function SceneReady() {
 
 export default function GameScene() {
   const game = useGame()
+  const sun = useRef<DirectionalLight>(null),
+    sky = useRef<HemisphereLight>(null)
+  const bloomLights = useMemo(() => [sun, sky], [])
   return (
     <Canvas
       orthographic
@@ -42,10 +52,11 @@ export default function GameScene() {
         outputColorSpace: SRGBColorSpace,
       }}
     >
-      <color attach="background" args={['#cba371']} />
+      <color attach="background" args={['#000000']} />
       <fog attach="fog" args={['#d6b17c', 145, 250]} />
-      <hemisphereLight args={['#e3f4e8', '#9c663c', 2.2]} />
+      <hemisphereLight ref={sky} args={['#e3f4e8', '#9c663c', 2.2]} />
       <directionalLight
+        ref={sun}
         position={[-32, 55, 25]}
         intensity={3.4}
         color="#fff0c9"
@@ -62,34 +73,36 @@ export default function GameScene() {
         shadow-radius={3}
       />
       <RTSCamera />
-      <Suspense fallback={null}>
-        <TerrainModel />
-        {layout.rocks.map((_, i) => (
-          <RockModel key={i} index={i} />
-        ))}
-        {game.world.deposits.map((deposit) => (
-          <MineralModel key={deposit.id} deposit={deposit} />
-        ))}
-        <RefineryModel />
-        <CourtyardModel />
-        {game.world.units.map((unit) => (
-          <group key={unit.id}>
-            <HarvesterModel unit={unit} />
-            <Particles unit={unit} />
-          </group>
-        ))}
-        {game.world.tanks.map((unit) => (
-          <group key={unit.id}>
-            <TankModel unit={unit} />
-            <Particles unit={unit} />
-          </group>
-        ))}
-        <DebugOverlay />
-        <SceneEffects />
-        <SceneReady />
-        <LabelProjection />
-        <MapCursor />
-      </Suspense>
+      <Selection>
+        <Suspense fallback={null}>
+          <TerrainModel />
+          {layout.rocks.map((_, i) => (
+            <RockModel key={i} index={i} />
+          ))}
+          {game.world.deposits.map((deposit) => (
+            <MineralModel key={deposit.id} deposit={deposit} />
+          ))}
+          <RefineryModel />
+          <CourtyardModel />
+          {game.world.units.map((unit) => (
+            <group key={unit.id}>
+              <HarvesterModel unit={unit} />
+              <Particles unit={unit} />
+            </group>
+          ))}
+          {game.world.tanks.map((unit) => (
+            <group key={unit.id}>
+              <TankModel unit={unit} />
+              <Particles unit={unit} />
+            </group>
+          ))}
+          <DebugOverlay />
+          <SceneEffects lights={bloomLights} />
+          <SceneReady />
+          <LabelProjection />
+          <MapCursor />
+        </Suspense>
+      </Selection>
     </Canvas>
   )
 }

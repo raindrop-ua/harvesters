@@ -17,6 +17,9 @@ export function useMapSurface(
   return {
     onPointerMove: hover,
     onPointerOver: hover,
+    onPointerOut: () => {
+      game.mapHover = null
+    },
     onClick: (event: ThreeEvent<MouseEvent>) => {
       event.stopPropagation()
       if (event.button !== 0 || event.delta > 5) return

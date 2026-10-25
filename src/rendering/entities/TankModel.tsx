@@ -60,7 +60,10 @@ export function TankModel({ unit }: { unit: Tank }) {
           game.hoverMap('unit', event.point)
           setHovered(true)
         }}
-        onPointerOut={() => setHovered(false)}
+        onPointerOut={() => {
+          setHovered(false)
+          game.mapHover = null
+        }}
       >
         <primitive object={model} dispose={null} />
       </group>

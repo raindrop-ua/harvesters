@@ -82,3 +82,11 @@ The heavy-tank render node followed authoritative turret yaw while the hull stay
 At 390 × 844, all five fleet buttons and the selected tank controls remained visible with no horizontal overflow. Screenshots: `artifacts/tanks-staging.png`, `artifacts/tank-blocked.png`, `artifacts/tanks-desktop.png`, and `artifacts/tanks-mobile.png`. Browser-only runtime/scene inspection was injected through test routes, not shipped in application code.
 
 A clean production preview on port 4173 loaded all three tank GLBs, exposed no test instrumentation, completed its first delivery, and produced no JavaScript errors. `artifacts/tanks-production.png` records the running five-unit scene with the heavy tank selected.
+
+## Crystal glow and map boundary
+
+Mineral-only bloom and slowly changing emissive facet colors were checked in an isolated browser page. Material samples changed after resuming simulation and stayed exactly equal while paused; each field owns three separate materials. The terrain's optional `DesertHorizon` is hidden and the scene background is `#000000`. Zoom/pan exposed the sharp playable boundary, with no accepted movement into black space.
+
+A clean production preview loaded without JavaScript errors. Toggling postprocessing off/on restored glow, and a native crystal click still produced the HARVEST cursor/order. The 390 × 844 layout had no horizontal overflow. The translucent header keeps credits and controls readable over black. Screenshots: `artifacts/crystal-glow.png`, `artifacts/crystal-glow-boundary-production.png`, and `artifacts/crystal-glow-mobile.png`.
+
+Graphics dependencies are grouped into one renderer chunk to avoid a circular chunk dependency introduced by selection-based bloom; the pre-existing large-graphics-bundle warning remains a size advisory.

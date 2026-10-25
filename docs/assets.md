@@ -82,7 +82,7 @@ Vehicle and building origins are ground-centered. The mining rotor origin is its
 
 ## Terrain editing
 
-The playable surface is a 65 × 65 vertex mesh for a 64 × 64 navigation grid. The exact triangle diagonal is part of the navigation contract. `DesertHorizon` is decorative, non-playable sand outside the grid, so wide camera views do not reveal a cut edge.
+The playable surface is a 65 × 65 vertex mesh for a 64 × 64 navigation grid. The exact triangle diagonal is part of the navigation contract. `DesertHorizon` retains the optional decorative sand skirt in the editable asset. Runtime hides it to expose the exact playable-map edge against a black background; the heightfield, navigation metadata and source GLB remain unchanged.
 
 For manual sculpting, edit `DesertHeightfield` vertex heights while preserving X/Z positions, vertex count, and triangle topology. Keep the refinery pad level. Export with:
 

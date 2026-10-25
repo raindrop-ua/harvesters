@@ -1,7 +1,7 @@
 :root {
   font-family: 'DM Sans', sans-serif;
   color: #26372d;
-  background: #cba371;
+  background: #000000;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -61,7 +61,10 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 20px;
+  padding: 10px 12px 20px;
+  margin: -10px -12px 0;
+  background: #f5efdce6;
+  border-radius: 3px;
   border-bottom: 1px solid #39423030;
   gap: 18px;
 }
