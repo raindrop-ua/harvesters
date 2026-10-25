@@ -8,8 +8,13 @@ export default defineConfig({
       output: {
         manualChunks: {
           three: ['three'],
-          renderer: ['@react-three/fiber', '@react-three/drei'],
-          effects: ['@react-three/postprocessing', 'postprocessing'],
+          // Selection-based effects share React/R3F helpers; keep them in one graphics chunk.
+          renderer: [
+            '@react-three/fiber',
+            '@react-three/drei',
+            '@react-three/postprocessing',
+            'postprocessing',
+          ],
         },
       },
     },

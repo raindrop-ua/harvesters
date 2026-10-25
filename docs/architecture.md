@@ -54,7 +54,11 @@ Tank parameters live in `config.tanks` and northern staging cells in `assets/wor
 
 World labels use one DOM overlay; `LabelProjection` updates its element transforms from the camera and interpolated unit positions without per-frame React state or additional React roots. Mineral geometry retains seven named Blender prisms. They shorten and disappear sequentially as the remaining amount decreases, then grow back as it recovers; the HUD snapshot provides percentage, grade, and regrowth indicators.
 
-Postprocessing combines fine temporal noise, radially modulated chromatic separation, and a subtle vignette. Settings can be changed or disabled without affecting gameplay. The orthographic camera controller owns bounds, zoom, keyboard state, drag input, and smoothing independently of entities.
+Mineral materials are cloned per deposit (three per field) on an owned model hierarchy, so their slow, staggered emissive color/intensity shimmer does not mutate cached GLTF resources or bleed between fields. Simulation time freezes the shimmer on pause and scales it with game speed. Owned materials are disposed on cleanup; geometry remains shared. A postprocessing selection includes only the imported crystal meshes, giving them a restrained bloom while leaving buildings and terrain unaffected. Hidden depletion stages disappear from the glow too. Turning off postprocessing removes the halo while retaining material emission.
+
+The scene and page backgrounds are black. The cloned terrain's `DesertHorizon` is hidden, revealing the playable heightfield boundary without changing geometry or navigation data. Hover targets clear when the pointer leaves a world surface. The header has a light translucent backing so credits and controls remain readable above black space.
+
+Postprocessing combines mineral-only bloom, fine temporal noise, radially modulated chromatic separation, and a subtle vignette. Settings can be changed or disabled without affecting gameplay. The orthographic camera controller owns bounds, zoom, keyboard state, drag input, and smoothing independently of entities.
 
 ## Adding content
 
