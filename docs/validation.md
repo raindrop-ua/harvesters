@@ -10,9 +10,10 @@ Validated locally with Node 24.18.0, Blender 5.2.3 LTS, React 19.3.1, R3F 9.8.2,
 - Strict TypeScript type checking.
 - ESLint.
 - Simulation/rendering import boundaries and Blender-only world-geometry guard.
-- **43 Node-only tests**, including grid conversions, exact triangle heights, overlapping occupancy, A* obstacles/costs/unreachable goals, all harvesting states, capacity, partial-load depletion, economy conservation, missing refineries, blocked docks, invalidated paths, commands, dock reservations, FPS-independent scheduling, bounded catch-up, selection voice playback, and background music.
+- **49 Node-only tests**, including grid conversions, exact triangle heights, overlapping occupancy, A* obstacles/costs/unreachable goals, all harvesting states, capacity, partial-load depletion, mineral regeneration, economy conservation, missing refineries, blocked docks, invalidated paths, commands, dock reservations, FPS-independent scheduling, bounded catch-up, selection voice playback, and background music.
 - Music coverage includes all seven local MP3 assets, ordered playback and wraparound, initial activation, pause intent, hidden-tab resume, track selection, stale play promises, blocked playback retry, bounded failure handling, volume, and cleanup.
-- A full-map fleet simulation mines and delivers all **3,660 minerals**, then both units idle with no resource loss or overlapping centers.
+- With regeneration disabled, a full-map fleet simulation mines and delivers all **3,660 minerals**, then both units idle with no resource loss or overlapping centers.
+- Regeneration tests cover 12 M/min per resting field, original-capacity limits, no growth during harvesting, dispatch reserve, automatic repeated deliveries after total exhaustion, conserved initial + regenerated resources, unchanged navigation reservations, Hold/Autopilot, small-capacity fields, pause, speed, and identical 30/144 FPS results.
 - GLB structure, required animation nodes, Blender provenance, and all **4,225 terrain vertex heights** match navigation data.
 - Production build.
 
@@ -37,6 +38,8 @@ Chromium at 1440 × 1000 and 390 × 844:
 - Music stays silent before user interaction, then starts at 25% volume. All seven files decoded and played; seeking near each track's end exercised native `ended` transitions through the playlist and back to the first track.
 - Radio pause, Next while paused, Play, direct playlist selection, and volume changes work. Selecting harvesters still plays voices independently, without resuming intentionally paused music.
 - The radio and expanded seven-track playlist fit both viewport sizes with no horizontal overflow. Music screenshots are saved as `artifacts/music-player-desktop.png` and `artifacts/music-playlist-mobile.png`.
+- An instrumented browser run began with all five fields empty. At 119 simulation seconds both units still waited and each field held 23.8 M; after crossing the 24 M reserve both units resumed automatically. By 304 seconds each had completed four deliveries and the balance reached 221 M. Remaining deposits + cargo + stored minerals matched actual regrowth. Pausing froze growth; labels showed grade and REGROWING.
+- With both units held for a further ten simulation minutes, the authored crystal clusters visibly returned to 15–25% capacity. Desktop and portrait screenshots verify growing geometry and regrowth labels; the document stays within the 390 px viewport. This uses temporary browser instrumentation to advance the real simulation, without changing production code or the configured regeneration rate.
 
 The built application was also served with `npm run preview -- --port 4173`. It completed a delivery of 120 minerals, retained a working canvas through repeated selection and postprocessing toggles, and made no external resource requests. Final desktop and portrait screenshots were captured from this production preview.
 

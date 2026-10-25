@@ -1,5 +1,5 @@
 import layout from '../../../assets/world.json'
-import { config, type HarvesterConfig } from '../config'
+import { config, type HarvesterConfig, type MineralConfig } from '../config'
 import { Grid } from '../navigation/Grid'
 import { Pathfinder } from '../navigation/Pathfinder'
 import { Economy, Refinery } from '../economy/Economy'
@@ -18,10 +18,12 @@ export class World {
   time = 0
   deliveries = 0
   extracted = 0
+  regenerated = 0
 
   constructor(
     readonly settings: HarvesterConfig = { ...config.harvester },
     spawns = layout.harvesters,
+    readonly mineralSettings: MineralConfig = { ...config.minerals },
   ) {
     this.grid = new Grid()
     this.navigation = new Pathfinder(this.grid)

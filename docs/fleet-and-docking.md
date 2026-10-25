@@ -18,7 +18,7 @@ The entrance, apron, and lane markings in `refinery.blend` align with this point
 
 Holding a waiting unit removes its request while retaining cargo. Holding a unit inside the port retains its reservation so another vehicle cannot drive into it. Autopilot resumes docking or departure as appropriate. A physically obstructed waiting bay is skipped when assigning a new request.
 
-## Mineral depletion
+## Mineral depletion and regrowth
 
 Each deposit retains seven named Blender crystal meshes. Depletion progressively removes prisms and scales the currently depleted prism between whole stages. The remaining cluster also shrinks slightly. The labels show exact remaining percentages and five grades:
 
@@ -31,5 +31,11 @@ Each deposit retains seven named Blender crystal meshes. Depletion progressively
 | 0%                   | DEPLETED |
 
 Both units withdraw from the same authoritative amount. Resource availability, cargo capacity, and economy conservation remain independent of rendering. When practical, units prefer separate deposits and avoid claiming overlapping mining positions.
+
+Resting deposits recover **0.2 M per simulation second (12 M per minute)**, capped at their original `initialAmount`. A field pauses recovery while either unit is actively harvesting it. Growth uses fixed simulation ticks: pause and hidden tabs freeze it, and the simulation speed control accelerates it along with the rest of gameplay. The same authored prisms reappear and grow as their resource fraction increases. Labels retain the grade and append **REGROWING** while the field is recovering.
+
+Autonomous selection waits for **24 M** at a field before assigning a trip, avoiding repeated journeys for tiny new fragments. For a field with a smaller original capacity, its full capacity is sufficient. Existing bounded retries let idle autonomous units resume without player input, approximately two simulation minutes after a completely empty map starts recovering. Hold remains in effect until the player chooses Autopilot. Explicit HARVEST orders may still target a smaller positive reserve.
+
+Renewable patches keep their original navigation footprint even at zero minerals. They cannot grow underneath a vehicle or invalidate a route through newly occupied cells. There is no spreading to new terrain. `World.regenerated` records actual growth, including capacity limits; remaining minerals + cargo + stored minerals equals initial reserves + regenerated minerals. Setting `minerals.regenerationRate` to zero restores finite depletion and occupancy release for controlled scenarios and tests.
 
 The grid layout defines the dock, approach, primary exit, heading, and waiting slots in `assets/world.json`. Movement, separation, alignment tolerances, transfer rates, and resource preferences live in `src/game/config.ts`. This is a small two-unit traffic model, not a general solution for hundreds of agents.

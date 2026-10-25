@@ -20,7 +20,7 @@ const dockStates: readonly HarvesterState[] = [
   'LEAVE_REFINERY',
 ]
 
-/** One unit's behavior; all fleet members share navigation, finite deposits, and the dock. */
+/** One unit's behavior; all fleet members share navigation, deposits, and the dock. */
 export class HarvesterBehavior {
   constructor(
     readonly world: World,
@@ -245,7 +245,16 @@ export class HarvesterBehavior {
       )
     }
     const deposits = w.deposits
-      .filter((d) => d.amount > 1e-8)
+      .filter(
+        (d) =>
+          d.amount > 1e-8 &&
+          (w.mineralSettings.regenerationRate <= 0 ||
+            d.amount + 1e-8 >=
+              Math.min(
+                w.mineralSettings.minimumDispatchAmount,
+                d.initialAmount,
+              )),
+      )
       .sort((a, b) => score(a) - score(b))
     for (const deposit of deposits) if (this.routeToDeposit(deposit)) return
     if (u.cargo > 0) this.transition('CARGO_FULL', 'Returning remaining cargo')
@@ -253,7 +262,9 @@ export class HarvesterBehavior {
       this.wait(
         deposits.length
           ? 'No reachable deposits · retrying'
-          : 'All deposits depleted · standing by',
+          : w.mineralSettings.regenerationRate > 0
+            ? 'Waiting for minerals to regrow'
+            : 'All deposits depleted · standing by',
       )
   }
   private returnCargo(): void {
@@ -560,7 +571,9 @@ export class HarvesterBehavior {
         w.extracted += amount
         if (deposit.amount <= 1e-8) {
           deposit.amount = 0
-          w.grid.release(deposit.id)
+          // Renewable fields retain their footprint, so regrowth cannot trap a vehicle.
+          if (w.mineralSettings.regenerationRate <= 0)
+            w.grid.release(deposit.id)
         }
         if (u.cargo >= u.capacity - 1e-8 || deposit.amount === 0)
           this.transition(

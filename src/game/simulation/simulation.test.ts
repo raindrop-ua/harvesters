@@ -8,7 +8,12 @@ import type { HarvesterState } from '../types'
 
 const dt = 1 / config.tickRate
 const singleSimulation = () =>
-  new Simulation(new World(undefined, layout.harvesters.slice(0, 1)))
+  new Simulation(
+    new World(undefined, layout.harvesters.slice(0, 1), {
+      ...config.minerals,
+      regenerationRate: 0,
+    }),
+  )
 function until(
   sim: Simulation,
   predicate: () => boolean,

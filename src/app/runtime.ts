@@ -4,6 +4,7 @@ import { FixedLoop } from '../game/core/FixedLoop'
 import { Simulation } from '../game/simulation/Simulation'
 import { SelectionVoice } from '../audio/SelectionVoice'
 import { BackgroundMusic } from '../audio/BackgroundMusic'
+import { isRegenerating } from '../game/simulation/MineralRegeneration'
 import type { EntityId, GridPosition, HarvesterState } from '../game/types'
 
 export interface PostProcessingSettings {
@@ -29,7 +30,12 @@ export interface ViewSnapshot {
   units: UnitView[]
   dockOwner?: EntityId
   queue: EntityId[]
-  deposits: { id: EntityId; fraction: number; amount: number }[]
+  deposits: {
+    id: EntityId
+    fraction: number
+    amount: number
+    regenerating: boolean
+  }[]
   remaining: number
   fps: number
   gridRevision: number
@@ -91,6 +97,7 @@ export class GameRuntime {
         id: d.id,
         fraction: d.amount / d.initialAmount,
         amount: d.amount,
+        regenerating: isRegenerating(w, d),
       })),
       remaining: w.deposits.reduce((sum, d) => sum + d.amount, 0),
       fps,

@@ -55,7 +55,10 @@ export function WorldLabels() {
             >
               <i style={{ width: `${d.fraction * 100}%` }} />
             </div>
-            <small>{mineralGrade(d.fraction)}</small>
+            <small>
+              {mineralGrade(d.fraction)}
+              {d.regenerating && ' · REGROWING'}
+            </small>
           </div>
         </div>
       ))}
