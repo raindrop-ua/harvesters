@@ -34,6 +34,18 @@ python3 scripts/export-assets.py --add-smoke-outlet
 
 This is idempotent and preserves an existing marker position. Move `SmokeOutlet` with the chimney when editing the source. New refinery generation includes it automatically. The current upgrade preserves every refinery mesh position, normal, and triangle index.
 
+## Tank assets
+
+`assets/blender/tank-light.blend`, `tank-medium.blend`, and `tank-heavy.blend` export to the matching names in `public/models/`. Their reproducible authoring is in `scripts/blender/tanks.py` using the shared faction palette. Sizes, armor silhouettes, road wheels, fenders, cannon lengths and heavy side skirts distinguish the classes.
+
+Each asset retains `Hull`, `LeftTrackAssembly`, `RightTrackAssembly`, and the parent chain `TurretYaw → GunPitch → Muzzle`. The yaw origin sits on the turntable; pitch pivots at the mantlet; the muzzle marker is at the barrel tip, with local +Z as the firing direction. Keep this hierarchy and these pivots when editing. Runtime geometry does not compensate for misplaced origins. The asset check enforces required nodes, parenting and marker direction.
+
+```sh
+python3 scripts/export-assets.py --generate tank-light tank-medium tank-heavy
+node scripts/optimize-assets.mjs tank-light tank-medium tank-heavy
+npm run assets:export -- tank-medium  # Re-export a manual Blender edit
+```
+
 ## Regenerate the initial art
 
 ```sh
@@ -85,6 +97,6 @@ The exporter extracts the edited heights into `src/game/data/terrain.json` and r
 
 glTF Transform deduplicates reusable data, welds identical vertices, and prunes unused data. It preserves the node hierarchy, animation pivots, emission extensions, and full-precision terrain positions. No lossy simplification, Draco, or texture decoding dependency is needed for this asset size. Provenance is retained in GLB extras as `sourceGenerator` and `sourceFile`.
 
-`npm run assets:check` validates GLB headers, Blender provenance, required animation/effect nodes, courtyard footprint bounds, and every terrain/navigation vertex. The eight optimized GLBs total approximately 2 MB. The harvester is around 14k triangles, refinery around 6k, courtyard around 9k, and each smoke puff 240 triangles; a future large fleet should add LODs and measure draw calls before increasing detail.
+`npm run assets:check` validates GLB headers, Blender provenance, required animation/effect nodes, courtyard footprint bounds, and every terrain/navigation vertex. The eleven optimized GLBs total approximately 4.1 MiB. The light/medium/heavy tanks are around 15k/18k/21k triangles. The harvester is around 14k triangles, refinery around 6k, courtyard around 9k, and each smoke puff 240 triangles; a future large fleet should add LODs and measure draw calls before increasing detail.
 
 Selective export and optimization touch only the requested assets.

@@ -7,7 +7,7 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
-asset_names = ["terrain", "harvester", "refinery", "courtyard", "smoke", "minerals", "rocks", "effects"]
+asset_names = ["terrain", "harvester", "refinery", "courtyard", "smoke", "minerals", "rocks", "effects", "tank-light", "tank-medium", "tank-heavy"]
 parser.add_argument("--existing", nargs="*", choices=asset_names)
 parser.add_argument("--generate", nargs="*", choices=asset_names)
 parser.add_argument("--add-smoke-outlet", action="store_true")

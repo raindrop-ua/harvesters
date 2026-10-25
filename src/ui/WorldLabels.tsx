@@ -1,5 +1,6 @@
 import { useGame, useUI } from '../app/GameContext'
 import { mineralGrade } from '../rendering/entities/mineralVisuals'
+import { MoveFeedback } from './MoveFeedback'
 
 /** One DOM tree for world labels; presentation refs are positioned by the canvas bridge. */
 export function WorldLabels() {
@@ -17,6 +18,7 @@ export function WorldLabels() {
       aria-hidden={!ready}
       style={{ visibility: ready ? 'visible' : 'hidden' }}
     >
+      <MoveFeedback />
       <div
         className="projected-label"
         ref={(element) => attach('courtyard-01', element)}
@@ -26,7 +28,7 @@ export function WorldLabels() {
           <small>CONSTRUCTION YARD</small>
         </div>
       </div>
-      {game.world.units.map((unit) => (
+      {game.world.vehicles.map((unit) => (
         <div
           key={unit.id}
           className="projected-label"
@@ -36,7 +38,9 @@ export function WorldLabels() {
             className={`unit-world-label ${selectedId === unit.id ? 'is-selected' : ''}`}
             data-testid={`world-${unit.id}`}
           >
-            H-{unit.id.slice(-2)}
+            {unit.kind === 'harvester'
+              ? `H-${unit.id.slice(-2)}`
+              : `${unit.tankClass[0].toUpperCase()}T-01`}
           </span>
         </div>
       ))}

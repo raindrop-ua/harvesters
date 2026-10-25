@@ -1,3 +1,4 @@
+import { config } from '../game/config'
 import { useEffect } from 'react'
 import { useGame, useUI } from '../app/GameContext'
 import type { HarvesterState } from '../game/types'
@@ -56,7 +57,11 @@ export function HUD() {
       if (event.code === 'KeyP')
         game.ui.setState((s) => ({ showPaths: !s.showPaths }))
       if (event.code === 'Escape')
-        game.ui.setState({ selectedId: null, developerOpen: false })
+        game.ui.setState({
+          selectedId: null,
+          developerOpen: false,
+          moveFeedback: null,
+        })
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
@@ -70,7 +75,8 @@ export function HUD() {
     'LEAVE_REFINERY',
     'MOVE',
   ].includes(unit.state)
-  const progress = (unit.cargo / unit.capacity) * 100
+  const progress =
+    unit.kind === 'harvester' ? (unit.cargo / unit.capacity) * 100 : 0
   return (
     <div className="hud">
       <header className="topbar">
@@ -167,47 +173,79 @@ export function HUD() {
 
       <footer className="bottom-hud">
         <div className="unit-area">
-          <div className="fleet-switcher" aria-label="Harvester fleet">
+          <div className="fleet-switcher" aria-label="Unit fleet">
             {view.units.map((u) => (
               <button
                 key={u.id}
-                aria-label={`Select harvester H-${u.id.slice(-2)}`}
+                aria-label={
+                  u.kind === 'harvester'
+                    ? `Select harvester H-${u.id.slice(-2)}`
+                    : `Select ${u.tankClass} tank`
+                }
+                className={u.kind}
                 aria-pressed={selectedId === u.id}
                 onClick={() => game.selectUnit(u.id)}
               >
                 <span
                   className={`live-dot ${u.state === 'WAIT_FOR_DOCK' ? 'is-paused' : ''}`}
                 />
-                <b>H-{u.id.slice(-2)}</b>
-                <span>{Math.floor(u.cargo + 1e-6)} M</span>
+                <b>
+                  {u.kind === 'harvester'
+                    ? `H-${u.id.slice(-2)}`
+                    : `${u.tankClass[0].toUpperCase()}T`}
+                </b>
+                <span>
+                  {u.kind === 'harvester'
+                    ? `${Math.floor(u.cargo + 1e-6)} M`
+                    : u.tankClass.toUpperCase()}
+                </span>
               </button>
             ))}
           </div>
           {selected ? (
             <section
               className="unit-card panel"
-              aria-label="Selected harvester"
+              aria-label={
+                unit.kind === 'harvester'
+                  ? 'Selected harvester'
+                  : 'Selected tank'
+              }
             >
               <div className="panel-topline">
                 <span className="eyebrow">
-                  <span className="tiny-square" /> UNIT {unit.id.slice(-2)} ·
-                  INDUSTRIAL
+                  <span className="tiny-square" />{' '}
+                  {unit.kind === 'harvester'
+                    ? `UNIT ${unit.id.slice(-2)} · INDUSTRIAL`
+                    : `${unit.tankClass.toUpperCase()} · ARMORED`}
                 </span>
                 <button
                   className="icon-button small"
-                  aria-label="Deselect harvester"
-                  onClick={() => game.ui.setState({ selectedId: null })}
+                  aria-label="Deselect unit"
+                  onClick={() =>
+                    game.ui.setState({ selectedId: null, moveFeedback: null })
+                  }
                 >
                   <Icon name="close" size={15} />
                 </button>
               </div>
               <div className="unit-heading">
                 <div>
-                  <h2>The workhorse.</h2>
-                  <p>H-{unit.id.slice(-2)} TRACKED HARVESTER</p>
+                  <h2>
+                    {unit.kind === 'harvester'
+                      ? 'The workhorse.'
+                      : config.tanks[unit.tankClass].name}
+                  </h2>
+                  <p>
+                    {unit.kind === 'harvester'
+                      ? `H-${unit.id.slice(-2)} TRACKED HARVESTER`
+                      : `${unit.tankClass.toUpperCase()} TRACKED TANK`}
+                  </p>
                 </div>
                 <div className="unit-emblem">
-                  <Icon name="tractor" size={32} />
+                  <Icon
+                    name={unit.kind === 'harvester' ? 'tractor' : 'tank'}
+                    size={32}
+                  />
                 </div>
               </div>
               <div className="unit-state">
@@ -222,46 +260,77 @@ export function HUD() {
               <p className="unit-message" data-testid="unit-message">
                 {unit.message}
               </p>
-              <div className="cargo-label">
-                <span>CARGO BAY</span>
-                <span>
-                  <b data-testid="cargo">{Math.floor(unit.cargo + 1e-6)}</b> /{' '}
-                  {unit.capacity} M
-                </span>
-              </div>
-              <div
-                className="cargo-track"
-                role="progressbar"
-                aria-label="Harvester cargo"
-                aria-valuemin={0}
-                aria-valuemax={unit.capacity}
-                aria-valuenow={Math.floor(unit.cargo + 1e-6)}
-              >
-                <div style={{ width: `${progress}%` }} />
-              </div>
+              {unit.kind === 'harvester' ? (
+                <>
+                  <div className="cargo-label">
+                    <span>CARGO BAY</span>
+                    <span>
+                      <b data-testid="cargo">{Math.floor(unit.cargo + 1e-6)}</b>{' '}
+                      / {unit.capacity} M
+                    </span>
+                  </div>
+                  <div
+                    className="cargo-track"
+                    role="progressbar"
+                    aria-label="Harvester cargo"
+                    aria-valuemin={0}
+                    aria-valuemax={unit.capacity}
+                    aria-valuenow={Math.floor(unit.cargo + 1e-6)}
+                  >
+                    <div style={{ width: `${progress}%` }} />
+                  </div>
+                </>
+              ) : (
+                <div className="tank-details">
+                  <span>
+                    TOP SPEED <b>{config.tanks[unit.tankClass].speed} M/S</b>
+                  </span>
+                  <span>
+                    ORDERS <b>MOVE / HOLD</b>
+                  </span>
+                </div>
+              )}
               <div className="unit-actions">
                 <button onClick={() => game.focusUnit()} title="Focus unit (F)">
                   <Icon name="focus" size={15} /> Locate <kbd>F</kbd>
                 </button>
                 <button
                   onClick={() =>
-                    game.command(unit.state === 'STOPPED' ? 'AUTO' : 'STOP')
+                    game.command(
+                      unit.kind === 'harvester' && unit.state === 'STOPPED'
+                        ? 'AUTO'
+                        : 'STOP',
+                    )
                   }
                 >
                   <Icon
-                    name={unit.state === 'STOPPED' ? 'play' : 'pause'}
+                    name={
+                      unit.kind === 'harvester' && unit.state === 'STOPPED'
+                        ? 'play'
+                        : 'pause'
+                    }
                     size={13}
                   />
-                  {unit.state === 'STOPPED' ? 'Autopilot' : 'Hold'}
+                  {unit.kind === 'harvester' && unit.state === 'STOPPED'
+                    ? 'Autopilot'
+                    : 'Hold'}
                 </button>
-                <button
-                  onClick={() => game.command('RETURN_CARGO')}
-                  aria-label="Return cargo to refinery"
-                  title="Return cargo"
-                >
-                  <Icon name="return" size={15} />
-                </button>
+                {unit.kind === 'harvester' && (
+                  <button
+                    disabled={unit.cargo <= 0}
+                    onClick={() => game.command('RETURN_CARGO')}
+                    aria-label="Return cargo to refinery"
+                    title="Return cargo"
+                  >
+                    <Icon name="return" size={15} />
+                  </button>
+                )}
               </div>
+              <p className="move-order-hint">
+                {unit.kind === 'harvester'
+                  ? 'LMB · MOVE / HARVEST / UNLOAD'
+                  : 'LMB · MOVE / ESC · DESELECT'}
+              </p>
             </section>
           ) : (
             <button
@@ -270,7 +339,7 @@ export function HUD() {
             >
               <Icon name="tractor" />
               <span>
-                Select harvester <kbd>F</kbd>
+                Select unit <kbd>F</kbd>
               </span>
               <Icon name="arrow" size={16} />
             </button>

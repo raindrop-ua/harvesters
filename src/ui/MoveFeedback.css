@@ -1,0 +1,52 @@
+.move-feedback {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: #386c46;
+  animation: move-feedback 1.5s ease-out forwards;
+}
+.move-feedback > svg {
+  filter: drop-shadow(0 1px 1px #fff9d5);
+}
+.move-feedback.is-rejected {
+  color: #a64432;
+  animation-duration: 1.1s;
+}
+.move-feedback small {
+  position: absolute;
+  top: calc(100% + 3px);
+  padding: 4px 6px;
+  border-radius: 2px;
+  background: #f5efdcde;
+  white-space: nowrap;
+  font-size: 8px;
+  font-weight: 500;
+}
+.move-order-hint {
+  margin: 8px 0 0;
+  font-size: 6px;
+  letter-spacing: 0.06em;
+  color: #727660;
+}
+@keyframes move-feedback {
+  0% {
+    transform: scale(1.35);
+    opacity: 0.4;
+  }
+  15%,
+  65% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .move-feedback {
+    animation: none;
+  }
+}

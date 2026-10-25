@@ -21,6 +21,29 @@ export const config = {
     dockingAngleTolerance: 0.025,
     busyDepositPenalty: 18,
   },
+  tanks: {
+    light: {
+      name: 'Sand scout',
+      speed: 7.2,
+      acceleration: 6,
+      turnSpeed: 3.2,
+      turretSpeed: 0.65,
+    },
+    medium: {
+      name: 'Dune ranger',
+      speed: 5.6,
+      acceleration: 4.5,
+      turnSpeed: 2.4,
+      turretSpeed: 0.5,
+    },
+    heavy: {
+      name: 'Basin sentinel',
+      speed: 4,
+      acceleration: 3,
+      turnSpeed: 1.8,
+      turretSpeed: 0.38,
+    },
+  },
   camera: {
     initialFocus: { x: -12, z: -3 },
     elevation: 55,

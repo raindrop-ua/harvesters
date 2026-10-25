@@ -9,9 +9,9 @@ export function MiniMap() {
   return (
     <button
       className="minimap"
-      aria-label="Focus camera on harvester"
+      aria-label="Focus camera on selected unit"
       onClick={() => game.focusUnit()}
-      title="Focus harvester (F)"
+      title="Focus unit (F)"
     >
       <div className="minimap-heading">
         <span>SECTOR 07</span>
@@ -20,7 +20,7 @@ export function MiniMap() {
       <svg
         viewBox="0 0 160 112"
         role="img"
-        aria-label="Sector map with refinery, construction yard, deposits and two harvesters"
+        aria-label="Sector map with refinery, construction yard, deposits, two harvesters and three tanks"
       >
         <defs>
           <pattern
@@ -87,12 +87,19 @@ export function MiniMap() {
                   strokeWidth="0.7"
                 />
               )}
-              <circle
-                cx={map(u.position.x)}
-                cy={map(u.position.z)}
-                r="2"
-                fill={u.id === selectedId ? '#eaf9db' : '#edbb78'}
-              />
+              {u.kind === 'tank' ? (
+                <path
+                  d={`M${map(u.position.x)} ${map(u.position.z) - 3}l2.5 5h-5Z`}
+                  fill={u.id === selectedId ? '#eaf9db' : '#edbb78'}
+                />
+              ) : (
+                <circle
+                  cx={map(u.position.x)}
+                  cy={map(u.position.z)}
+                  r="2"
+                  fill={u.id === selectedId ? '#eaf9db' : '#edbb78'}
+                />
+              )}
             </g>
           ))}
         </g>

@@ -1,6 +1,5 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { useCursor } from '@react-three/drei'
 import { useState } from 'react'
 import { Group, MathUtils } from 'three'
 import { useGame, useUI } from '../../app/GameContext'
@@ -10,6 +9,7 @@ import type { Deposit, Harvester } from '../../game/types'
 import { useModel } from '../models'
 import { crystalStage } from './mineralVisuals'
 import { RefinerySmoke } from '../effects/RefinerySmoke'
+import { useMapSurface } from '../input/useMapSurface'
 import {
   HARVESTER_PRESENTATION,
   HarvesterSuspension,
@@ -17,14 +17,16 @@ import {
 } from './harvesterMotion'
 
 export function TerrainModel() {
-  const model = useModel('terrain')
-  return <primitive object={model} dispose={null} />
+  const model = useModel('terrain'),
+    surface = useMapSurface()
+  return <primitive object={model} dispose={null} {...surface} />
 }
 
 export function RockModel({ index }: { index: number }) {
   const game = useGame(),
     rock = layout.rocks[index]
   const model = useModel('rocks')
+  const surface = useMapSurface(true)
   return (
     <primitive
       object={model}
@@ -32,6 +34,7 @@ export function RockModel({ index }: { index: number }) {
       position={[rock.x, game.world.grid.heightAt(rock.x, rock.z), rock.z]}
       scale={rock.scale}
       rotation-y={rock.rotation}
+      {...surface}
     />
   )
 }
@@ -39,6 +42,7 @@ export function RockModel({ index }: { index: number }) {
 export function MineralModel({ deposit }: { deposit: Deposit }) {
   const game = useGame(),
     model = useModel('minerals')
+  const surface = useMapSurface({ kind: 'deposit', id: deposit.id })
   const crystals = useMemo(
     () =>
       model.children
@@ -57,7 +61,7 @@ export function MineralModel({ deposit }: { deposit: Deposit }) {
     model.scale.setScalar(deposit.scale * (0.55 + 0.45 * Math.sqrt(amount)))
   })
   return (
-    <group position={[p.x, p.y, p.z]}>
+    <group position={[p.x, p.y, p.z]} {...surface}>
       <group rotation-y={deposit.cell.x * 1.7}>
         <primitive object={model} dispose={null} />
       </group>
@@ -69,6 +73,10 @@ export function RefineryModel() {
   const game = useGame(),
     model = useModel('refinery'),
     p = game.world.refineryPosition
+  const surface = useMapSurface({
+    kind: 'refinery',
+    id: game.world.refinery?.id ?? 'refinery-01',
+  })
   const lamp = model.getObjectByName('DockStatusLight')
   useFrame(({ clock }) => {
     if (lamp) {
@@ -79,7 +87,12 @@ export function RefineryModel() {
   })
   return (
     <>
-      <primitive object={model} dispose={null} position={[p.x, p.y, p.z]} />
+      <primitive
+        object={model}
+        dispose={null}
+        position={[p.x, p.y, p.z]}
+        {...surface}
+      />
       <RefinerySmoke outlet={model.getObjectByName('SmokeOutlet')!} />
     </>
   )
@@ -89,7 +102,15 @@ export function CourtyardModel() {
   const game = useGame(),
     model = useModel('courtyard'),
     p = game.world.courtyardPosition
-  return <primitive object={model} dispose={null} position={[p.x, p.y, p.z]} />
+  const surface = useMapSurface(true)
+  return (
+    <primitive
+      object={model}
+      dispose={null}
+      position={[p.x, p.y, p.z]}
+      {...surface}
+    />
+  )
 }
 
 export function HarvesterModel({ unit }: { unit: Harvester }) {
@@ -108,7 +129,6 @@ export function HarvesterModel({ unit }: { unit: Harvester }) {
     [model],
   )
   const [hovered, setHovered] = useState(false)
-  useCursor(hovered)
   // R3F reparents this node into the selection group. Retain it across rerenders.
   const ring = useMemo(
     () => effects.getObjectByName('SelectionRing')!,
@@ -163,10 +183,16 @@ export function HarvesterModel({ unit }: { unit: Harvester }) {
         ref={group}
         onClick={(event) => {
           event.stopPropagation()
+          if (event.button !== 0 || event.delta > 5) return
           game.selectUnit(unit.id)
+        }}
+        onPointerMove={(event) => {
+          event.stopPropagation()
+          game.hoverMap('unit', event.point)
         }}
         onPointerOver={(event) => {
           event.stopPropagation()
+          game.hoverMap('unit', event.point)
           setHovered(true)
         }}
         onPointerOut={() => setHovered(false)}

@@ -11,6 +11,9 @@ export const MODEL_URLS = [
   'minerals',
   'rocks',
   'effects',
+  'tank-light',
+  'tank-medium',
+  'tank-heavy',
 ].map((name) => `/models/${name}.glb`)
 for (const url of MODEL_URLS) useGLTF.preload(url)
 

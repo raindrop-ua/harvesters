@@ -16,6 +16,8 @@ import { Particles } from './effects/Particles'
 import { SceneEffects } from './postprocessing/SceneEffects'
 import { DebugOverlay } from './DebugOverlay'
 import { LabelProjection } from './LabelProjection'
+import { TankModel } from './entities/TankModel'
+import { MapCursor } from './input/MapCursor'
 
 function SceneReady() {
   const game = useGame()
@@ -39,7 +41,6 @@ export default function GameScene() {
         toneMapping: ACESFilmicToneMapping,
         outputColorSpace: SRGBColorSpace,
       }}
-      onPointerMissed={() => game.ui.setState({ selectedId: null })}
     >
       <color attach="background" args={['#cba371']} />
       <fog attach="fog" args={['#d6b17c', 145, 250]} />
@@ -77,10 +78,17 @@ export default function GameScene() {
             <Particles unit={unit} />
           </group>
         ))}
+        {game.world.tanks.map((unit) => (
+          <group key={unit.id}>
+            <TankModel unit={unit} />
+            <Particles unit={unit} />
+          </group>
+        ))}
         <DebugOverlay />
         <SceneEffects />
         <SceneReady />
         <LabelProjection />
+        <MapCursor />
       </Suspense>
     </Canvas>
   )
