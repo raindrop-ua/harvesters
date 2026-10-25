@@ -1,6 +1,10 @@
 # HARVESTER
 
+![HARVESTER — RTS proof of concept: desert harvesters, a refinery, and cyan crystals](public/og/harvester.jpg)
+
 A small crew. A vast desert.
+
+An RTS proof of concept for the browser, hosted at <https://harvesters.antonsizov.rocks/>. Search and social metadata are in `index.html`; the sharing cover is `public/og/harvester.jpg`. Crawler discovery files live in `public/robots.txt` and `public/sitemap.xml`.
 
 A playable desert RTS vertical slice: two autonomous tracked harvesters, one shared refinery, five slowly regenerating cyan mineral deposits, and an editable Blender-authored world. Each harvester finds resources, follows A* routes, mines, waits its turn, aligns nose first at one unloading point, unloads, and drives clear before the next unit enters. Deposits lose individual Blender-authored crystals as they are depleted and grow them back as they recover, with percentage, grade, and regrowth indicators.
 
