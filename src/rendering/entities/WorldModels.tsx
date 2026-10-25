@@ -131,7 +131,7 @@ export function HarvesterModel({ unit }: { unit: Harvester }) {
         ref={group}
         onClick={(event) => {
           event.stopPropagation()
-          game.ui.setState({ selectedId: unit.id })
+          game.selectUnit(unit.id)
         }}
         onPointerOver={(event) => {
           event.stopPropagation()
