@@ -9,6 +9,11 @@ import { angleDelta } from '../../game/simulation/Simulation'
 import type { Deposit, Harvester } from '../../game/types'
 import { useModel } from '../models'
 import { crystalStage } from './mineralVisuals'
+import {
+  HARVESTER_PRESENTATION,
+  HarvesterSuspension,
+  localForwardSpeed,
+} from './harvesterMotion'
 
 export function TerrainModel() {
   const model = useModel('terrain')
@@ -80,7 +85,15 @@ export function HarvesterModel({ unit }: { unit: Harvester }) {
     effects = useModel('effects')
   const selected = useUI((s) => s.selectedId === unit.id)
   const group = useRef<Group>(null),
+    body = useRef<Group>(null),
     selection = useRef<Group>(null)
+  const suspension = useMemo(() => new HarvesterSuspension(), [])
+  // Retain authored parts across rerenders after R3F reparents them into the body pivot.
+  const bodyParts = useMemo(
+    () =>
+      model.children.filter((part) => !/^(Left|Right)Track/.test(part.name)),
+    [model],
+  )
   const [hovered, setHovered] = useState(false)
   useCursor(hovered)
   // R3F reparents this node into the selection group. Retain it across rerenders.
@@ -111,6 +124,12 @@ export function HarvesterModel({ unit }: { unit: Harvester }) {
     group.current.rotation.z = Math.atan(
       slopeX * Math.cos(heading) - slopeZ * Math.sin(heading),
     )
+    const pitch = suspension.update(
+      localForwardSpeed(u, game.loop.dt),
+      game.world.time,
+      game.loop.paused ? 0 : delta * game.loop.speed,
+    )
+    if (body.current) body.current.rotation.x = pitch
     const visualTime = game.world.time
     if (rotor && !game.ui.getState().paused && u.state === 'HARVEST')
       rotor.rotation.x += delta * 7 * game.loop.speed
@@ -139,7 +158,19 @@ export function HarvesterModel({ unit }: { unit: Harvester }) {
         }}
         onPointerOut={() => setHovered(false)}
       >
-        <primitive object={model} dispose={null} />
+        <primitive object={model} dispose={null}>
+          <group
+            ref={body}
+            name={`Suspension-${unit.id}`}
+            position-y={HARVESTER_PRESENTATION.bodyPivotHeight}
+          >
+            <group position-y={-HARVESTER_PRESENTATION.bodyPivotHeight}>
+              {bodyParts.map((part) => (
+                <primitive key={part.uuid} object={part} dispose={null} />
+              ))}
+            </group>
+          </group>
+        </primitive>
       </group>
       <group ref={selection} visible={selected || hovered}>
         <primitive object={ring} dispose={null} />
