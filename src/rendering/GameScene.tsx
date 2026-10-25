@@ -16,6 +16,7 @@ import { Particles } from './effects/Particles'
 import { SceneEffects } from './postprocessing/SceneEffects'
 import { DebugOverlay } from './DebugOverlay'
 import { LabelProjection } from './LabelProjection'
+import { MapCursor } from './input/MapCursor'
 
 function SceneReady() {
   const game = useGame()
@@ -39,7 +40,6 @@ export default function GameScene() {
         toneMapping: ACESFilmicToneMapping,
         outputColorSpace: SRGBColorSpace,
       }}
-      onPointerMissed={() => game.ui.setState({ selectedId: null })}
     >
       <color attach="background" args={['#cba371']} />
       <fog attach="fog" args={['#d6b17c', 145, 250]} />
@@ -81,6 +81,7 @@ export default function GameScene() {
         <SceneEffects />
         <SceneReady />
         <LabelProjection />
+        <MapCursor />
       </Suspense>
     </Canvas>
   )

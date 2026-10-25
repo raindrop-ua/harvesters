@@ -33,6 +33,11 @@ export function LabelProjection() {
     }
     const yard = game.world.courtyardPosition
     place('courtyard-01', yard.x, yard.y + 0.5, yard.z + 8.6)
+    const feedback = game.ui.getState().moveFeedback
+    if (feedback) {
+      const p = feedback.position
+      place('move-feedback', p.x, p.y + 0.25, p.z)
+    }
   })
   return null
 }

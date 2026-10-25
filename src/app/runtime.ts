@@ -2,10 +2,28 @@ import { createStore } from 'zustand/vanilla'
 import { config } from '../game/config'
 import { FixedLoop } from '../game/core/FixedLoop'
 import { Simulation } from '../game/simulation/Simulation'
-import { SelectionVoice } from '../audio/SelectionVoice'
+import { HarvesterVoice } from '../audio/HarvesterVoice'
 import { BackgroundMusic } from '../audio/BackgroundMusic'
 import { isRegenerating } from '../game/simulation/MineralRegeneration'
-import type { EntityId, GridPosition, HarvesterState } from '../game/types'
+import type {
+  CommandResult,
+  EntityId,
+  GridPosition,
+  HarvesterState,
+  Position,
+} from '../game/types'
+
+export interface MapHover {
+  kind: 'ground' | 'blocked' | 'unit'
+  cell: GridPosition
+}
+export interface MoveFeedback {
+  sequence: number
+  unitId: EntityId
+  position: Position
+  accepted: boolean
+  reason?: string
+}
 
 export interface PostProcessingSettings {
   enabled: boolean
@@ -43,6 +61,7 @@ export interface ViewSnapshot {
 export interface UIState {
   ready: boolean
   selectedId: EntityId | null
+  moveFeedback: MoveFeedback | null
   developerOpen: boolean
   showGrid: boolean
   showPaths: boolean
@@ -55,7 +74,9 @@ export interface UIState {
 
 /** Owns browser scheduling and the low-frequency UI bridge; never owned by the canvas. */
 export class GameRuntime {
-  constructor(private readonly selectionVoice = new SelectionVoice()) {}
+  constructor(private readonly voice = new HarvesterVoice()) {}
+  mapHover: MapHover | null = null
+  private moveSequence = 0
   readonly music = new BackgroundMusic()
   readonly labelElements = new Map<EntityId, HTMLDivElement>()
   readonly simulation = new Simulation()
@@ -63,6 +84,7 @@ export class GameRuntime {
   readonly ui = createStore<UIState>(() => ({
     ready: false,
     selectedId: this.world.units[0].id,
+    moveFeedback: null,
     developerOpen: false,
     showGrid: false,
     showPaths: false,
@@ -130,7 +152,7 @@ export class GameRuntime {
     }
     raf = requestAnimationFrame(frame)
     const visibility = () => {
-      if (document.hidden) this.selectionVoice.stop()
+      if (document.hidden) this.voice.stop()
       this.music.setHidden(document.hidden)
     }
     const activateMusic = (event: Event) => {
@@ -155,14 +177,49 @@ export class GameRuntime {
       document.removeEventListener('visibilitychange', visibility)
       window.removeEventListener('pointerdown', activateMusic, true)
       window.removeEventListener('keydown', activateMusic, true)
-      this.selectionVoice.stop()
+      this.voice.stop()
       this.music.stop()
     }
   }
   selectUnit(id: EntityId): void {
     if (!this.world.units.some((unit) => unit.id === id)) return
-    this.ui.setState({ selectedId: id })
-    this.selectionVoice.play()
+    this.ui.setState({ selectedId: id, moveFeedback: null })
+    this.voice.play('selection')
+  }
+  hoverMap(kind: MapHover['kind'], point: GridPosition): void {
+    this.mapHover = { kind, cell: this.world.grid.worldToGrid(point) }
+  }
+  moveSelected(destination: GridPosition): CommandResult {
+    const { selectedId, ready } = this.ui.getState()
+    if (!selectedId || !ready)
+      return { accepted: false, reason: 'No unit selected' }
+    const result = this.simulation.commands.enqueue({
+      type: 'MOVE',
+      unitId: selectedId,
+      destination,
+    })
+    if (Number.isFinite(destination.x) && Number.isFinite(destination.z))
+      this.showMoveFeedback(this.world.grid.gridToWorld(destination), result)
+    if (result.accepted) this.voice.play('move')
+    return result
+  }
+  rejectMapMove(point: Position): void {
+    this.showMoveFeedback(point, {
+      accepted: false,
+      reason: 'Destination blocked',
+    })
+  }
+  private showMoveFeedback(position: Position, result: CommandResult): void {
+    const { selectedId, ready } = this.ui.getState()
+    if (!selectedId || !ready) return
+    this.ui.setState({
+      moveFeedback: {
+        sequence: ++this.moveSequence,
+        unitId: selectedId,
+        position: { ...position },
+        ...result,
+      },
+    })
   }
   focusUnit(
     id = this.ui.getState().selectedId ?? this.world.units[0].id,
@@ -180,6 +237,9 @@ export class GameRuntime {
   }
   command(type: 'STOP' | 'AUTO' | 'RETURN_CARGO'): void {
     const unitId = this.ui.getState().selectedId
-    if (unitId) this.simulation.commands.enqueue({ type, unitId })
+    if (unitId) {
+      this.simulation.commands.enqueue({ type, unitId })
+      this.ui.setState({ moveFeedback: null })
+    }
   }
 }

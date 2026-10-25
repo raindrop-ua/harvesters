@@ -37,8 +37,23 @@ Runtime assets are grouped in `public/audio/voices/harvester/selection/`:
 | `yes-sir-03.mp3` | `ElevenLabs_2026-10-25T03_54_41_Morgan - Deep, Powerful, and Confident_pvc_sp100_s50_sb75_v4.mp3`     |
 | `yes-sir-04.mp3` | `ElevenLabs_2026-10-25T03_54_41_Morgan - Deep, Powerful, and Confident_pvc_sp100_s50_sb75_v4 (1).mp3` |
 
-`src/audio/SelectionVoice.ts` owns the voice pool and one reusable HTML audio channel. Each explicit selection chooses randomly from all takes except the immediately previous take. Selecting either 3D vehicle, using the H-01/H-02 buttons, or selecting/focusing through F, Locate, or the minimap plays one acknowledgement. Clicking the same unit again also acknowledges. The initially selected unit stays silent at startup.
+`src/audio/HarvesterVoice.ts` owns the selection and movement pools and one reusable HTML audio channel. Each explicit selection chooses randomly from all selection takes except the immediately previous selection take. Selecting either 3D vehicle, using the H-01/H-02 buttons, or selecting/focusing through F, Locate, or the minimap plays one acknowledgement. Clicking the same unit again also acknowledges. The initially selected unit stays silent at startup.
 
-Rapid selections replace the current voice; they do not overlap or build a backlog. Playback starts directly in the input handler, preserving browser user activation. Playback rejection does not prevent selection. Voices stop when the game is unmounted or its tab is hidden. Default volume is 75%.
+### Movement confirmations
+
+All six new user-supplied ElevenLabs exports are copied byte for byte into `public/audio/voices/harvester/orders/`, with neutral numbered names for their movement-order purpose:
+
+| Asset               | Original ElevenLabs export                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| `move-order-01.mp3` | `ElevenLabs_2026-10-25T09_17_12_Morgan - Deep, Powerful, and Confident_pvc_sp100_s50_sb75_v4.mp3`     |
+| `move-order-02.mp3` | `ElevenLabs_2026-10-25T09_17_12_Morgan - Deep, Powerful, and Confident_pvc_sp100_s50_sb75_v4 (1).mp3` |
+| `move-order-03.mp3` | `ElevenLabs_2026-10-25T09_17_33_Morgan - Deep, Powerful, and Confident_pvc_sp100_s50_sb75_v4.mp3`     |
+| `move-order-04.mp3` | `ElevenLabs_2026-10-25T09_17_33_Morgan - Deep, Powerful, and Confident_pvc_sp100_s50_sb75_v4 (1).mp3` |
+| `move-order-05.mp3` | `ElevenLabs_2026-10-25T09_17_56_Morgan - Deep, Powerful, and Confident_pvc_sp100_s50_sb75_v4.mp3`     |
+| `move-order-06.mp3` | `ElevenLabs_2026-10-25T09_17_56_Morgan - Deep, Powerful, and Confident_pvc_sp100_s50_sb75_v4 (1).mp3` |
+
+An accepted left-click MOVE plays one randomly selected movement take. Immediate repeats are excluded independently in each voice group, so switching between selection and movement does not reset either group's history. Rejected moves, camera drags, and ground clicks without a selection stay silent. Autonomous travel does not trigger order acknowledgements.
+
+Rapid selections and movement orders replace the current voice; they do not overlap or build a backlog. Playback starts directly in the input handler, preserving browser user activation. Playback rejection does not prevent selection or commands. Voices stop when the game is unmounted or its tab is hidden. Default volume is 75%. Music remains a separate channel.
 
 All audio remains outside the deterministic simulation. Local MP3 assets are copied into `dist/audio/` by Vite and are included by the existing Docker `COPY public` workflow. No ElevenLabs account or API call is needed at runtime.

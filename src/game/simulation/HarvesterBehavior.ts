@@ -67,13 +67,7 @@ export class HarvesterBehavior {
     const w = this.world,
       u = this.unit,
       blocked = this.obstacles()
-    const start = w.grid.worldToGrid(u.position)
-    const first = w.navigation.findPath(
-      start,
-      via ?? destination,
-      blocked,
-      (next) => this.canConnect(next),
-    )
+    const first = this.findMovementPath(via ?? destination, blocked)
     if (!first) return false
     const second = via ? w.navigation.findPath(via, destination, blocked) : []
     if (!second) return false
@@ -83,6 +77,17 @@ export class HarvesterBehavior {
     u.retryAt = 0
     this.transition(state, message)
     return true
+  }
+  canMoveTo(destination: GridPosition): boolean {
+    return this.findMovementPath(destination, this.obstacles()) !== null
+  }
+  private findMovementPath(destination: GridPosition, blocked: Set<number>) {
+    return this.world.navigation.findPath(
+      this.world.grid.worldToGrid(this.unit.position),
+      destination,
+      blocked,
+      (next) => this.canConnect(next),
+    )
   }
   private canConnect(next: GridPosition): boolean {
     const w = this.world,

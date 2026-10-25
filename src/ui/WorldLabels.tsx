@@ -1,5 +1,6 @@
 import { useGame, useUI } from '../app/GameContext'
 import { mineralGrade } from '../rendering/entities/mineralVisuals'
+import { MoveFeedback } from './MoveFeedback'
 
 /** One DOM tree for world labels; presentation refs are positioned by the canvas bridge. */
 export function WorldLabels() {
@@ -17,6 +18,7 @@ export function WorldLabels() {
       aria-hidden={!ready}
       style={{ visibility: ready ? 'visible' : 'hidden' }}
     >
+      <MoveFeedback />
       <div
         className="projected-label"
         ref={(element) => attach('courtyard-01', element)}

@@ -1,5 +1,10 @@
 import { CommandBus } from '../commands/CommandBus'
-import type { CommandResult, UnitCommand } from '../types'
+import type {
+  CommandResult,
+  EntityId,
+  GridPosition,
+  UnitCommand,
+} from '../types'
 import { HarvesterBehavior } from './HarvesterBehavior'
 import { World } from './World'
 import { regenerateMinerals } from './MineralRegeneration'
@@ -20,12 +25,7 @@ export class Simulation {
       return { accepted: false, reason: 'Unknown unit' }
     switch (command.type) {
       case 'MOVE':
-        return this.world.grid.isWalkable(command.destination)
-          ? { accepted: true }
-          : {
-              accepted: false,
-              reason: 'Destination is blocked or outside the map',
-            }
+        return this.previewMove(command.unitId, command.destination)
       case 'HARVEST':
         return this.world.deposits.some(
           (d) => d.id === command.resourceId && d.amount > 0,
@@ -42,6 +42,16 @@ export class Simulation {
       default:
         return { accepted: false, reason: 'Unknown command' }
     }
+  }
+  /** Read-only query shared by hover feedback and command validation. */
+  previewMove(unitId: EntityId, destination: GridPosition): CommandResult {
+    const behavior = this.behaviors.find((b) => b.unit.id === unitId)
+    if (!behavior) return { accepted: false, reason: 'No unit selected' }
+    if (!this.world.grid.isWalkable(destination))
+      return { accepted: false, reason: 'Destination blocked' }
+    return behavior.canMoveTo(destination)
+      ? { accepted: true }
+      : { accepted: false, reason: 'No route to destination' }
   }
   step(dt: number): void {
     if (!Number.isFinite(dt) || dt <= 0) return

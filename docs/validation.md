@@ -10,12 +10,13 @@ Validated locally with Node 24.18.0, Blender 5.2.3 LTS, React 19.3.1, R3F 9.8.2,
 - Strict TypeScript type checking.
 - ESLint.
 - Simulation/rendering import boundaries and Blender-only world-geometry guard.
-- **60 Node-only tests**, including grid conversions, exact triangle heights, overlapping occupancy, A* obstacles/costs/unreachable goals, construction-yard occupancy and passage traversal, all harvesting states, capacity, partial-load depletion, mineral regeneration, economy conservation, missing refineries, blocked docks, invalidated paths, commands, dock reservations, FPS-independent scheduling, bounded catch-up, harvester suspension, smoke lifecycle, selection voice playback, and background music.
+- **68 Node-only tests**, including grid conversions, exact triangle heights, overlapping occupancy, A* obstacles/costs/unreachable goals, construction-yard occupancy and passage traversal, all harvesting states, capacity, partial-load depletion, mineral regeneration, economy conservation, missing refineries, blocked docks, invalidated paths, player movement orders, dock reservations, FPS-independent scheduling, bounded catch-up, harvester suspension, smoke lifecycle, selection/movement speech, and background music.
 - Music coverage includes all seven local MP3 assets, ordered playback and wraparound, initial activation, pause intent, hidden-tab resume, track selection, stale play promises, blocked playback retry, bounded failure handling, volume, and cleanup.
 - With regeneration disabled, a full-map fleet simulation mines and delivers all **3,660 minerals**, then both units idle with no resource loss or overlapping centers.
 - Regeneration tests cover 12 M/min per resting field, original-capacity limits, no growth during harvesting, dispatch reserve, automatic repeated deliveries after total exhaustion, conserved initial + regenerated resources, unchanged navigation reservations, Hold/Autopilot, small-capacity fields, pause, speed, and identical 30/144 FPS results.
 - Presentation motion tests cover signed forward/reverse travel at four headings, acceleration/braking pitch, reverse symmetry, restrained peaks, settling, 30/144 FPS response, pause, and bounded integration after a large frame gap.
 - Base tests verify the 56-cell courtyard footprint, eight-meter passage, rejection of MOVE orders into the yard, and an actual vehicle trip through the passage. Smoke tests cover activation, bounded pooling, no extra emission on frozen timestamps, stop/drain, repeated activation, and no burst after a long clock gap.
+- Player-order tests cover walkable-but-unreachable goals, other units, reserved refinery approaches, revalidation after new obstacles, cargo retention, waiting at the destination, and Autopilot resumption. Audio tests verify all six distinct movement takes, complete random-pool coverage, separate repeat histories, one shared speech channel, and accepted-only acknowledgements.
 - All eight GLBs pass structure, required-node and Blender-provenance checks. Courtyard geometry fits its reserved footprint, and all **4,225 terrain vertex heights** match navigation data.
 - Production build.
 
@@ -56,6 +57,12 @@ Courtyard and refinery render together in the initial wide and portrait views. T
 Real unloading produced smoke at the authored chimney outlet (-20.1, 8.77, -10). Pausing froze puff transforms and opacity exactly. After unloading, existing puffs remained briefly and then all dissipated; no smoke was visible in the initial idle state. Refinery mesh positions, normals, and triangle indices match the pre-upgrade GLB exactly. Local screenshots include `artifacts/courtyard-refinery-smoke.png`, `artifacts/courtyard-passage.png`, and `artifacts/courtyard-mobile.png`.
 
 The final production preview additionally served the courtyard, refinery, and smoke GLBs successfully, completed autonomous unloading with visible chimney smoke, and rendered both buildings in portrait after a fresh load. No console errors were recorded. The final smoke and portrait screenshots come from this production build without temporary instrumentation.
+
+Left-click movement was additionally exercised through actual pointer input at 1440 × 1000. Reachable ground uses the move SVG cursor and accepted reticle; the vehicle arrives at its selected grid center and retains selection. Clicking the Courtyard roof or a walkable-but-isolated goal shows rejection, plays no confirmation, and leaves the active move intact. Middle-button camera panning and left-button dragging emit no orders. Clicking the second vehicle selects it and uses its selection voice; Esc followed by a ground click issues no order.
+
+All six movement MP3s decoded and played natively through real accepted clicks at 75% volume, using one media element. Paused orders retained the unit's position until resuming; Autopilot restarted harvesting afterwards. In a separate 390 × 844 touch context, a native touch swipe panned without issuing an order and a native tap issued MOVE. No horizontal overflow or console errors were observed. Screenshots include `artifacts/move-order-desktop.png`, `artifacts/move-order-blocked.png`, and `artifacts/move-order-mobile.png`.
+
+The final production build was also served on port 4173 and checked without temporary game instrumentation: the move cursor, accepted reticle, native voice playback, paused-order execution, arrival, and Autopilot button all worked. All six built MP3s match the source assets byte for byte. The production screenshot is `artifacts/move-order-production.png`.
 
 ## Remaining limits
 

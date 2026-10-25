@@ -29,7 +29,8 @@ Open <http://127.0.0.1:5173>. Ready-to-use GLBs are included; Blender is only ne
 | Mouse wheel                     | Smooth zoom                                    |
 | Middle-button drag / touch drag | Pan camera                                     |
 | Click harvester / H-01 or H-02  | Select                                         |
-| Click empty terrain / Esc       | Deselect                                       |
+| Left-click reachable ground     | Move selected harvester                        |
+| Esc / deselect button           | Deselect                                       |
 | F / Locate / minimap            | Select and center harvester                    |
 | Space / pause button            | Pause or resume simulation                     |
 | 1× button                       | Cycle 1×, 2×, 4× simulation speed              |
@@ -39,9 +40,13 @@ Open <http://127.0.0.1:5173>. Ready-to-use GLBs are included; Blender is only ne
 | P                               | Toggle remaining navigation path               |
 | Sliders button                  | Developer controls and postprocessing settings |
 
-The simulation starts when assets are ready and pauses in hidden tabs. The camera stays usable while the simulation is paused. Manual MOVE and targeted HARVEST commands are supported by the tested command API; right-click movement is deliberately not exposed in the default UI.
+The simulation starts when assets are ready and pauses in hidden tabs. The camera stays usable while the simulation is paused. Select a harvester, then left-click the ground to move it: a green cursor marks reachable ground and a red cursor marks blocked or unreachable destinations. Accepted orders flash a target reticle and play a random voice confirmation. Invalid clicks retain the current order and selection. Camera drags do not issue orders. On touch screens, tap to move and drag to pan.
+
+A manual MOVE retains cargo and leaves the harvester waiting at its destination. Choose **Autopilot** to resume autonomous harvesting. Orders issued while paused execute after resuming. Targeted HARVEST is also supported by the tested command API.
 
 Selecting a harvester plays one of four random **“Yes sir!”** acknowledgements, without consecutive repeats or overlapping voices. The initial selection stays silent. The supplied ElevenLabs MP3s are grouped under `public/audio/voices/harvester/selection/`.
+
+Accepted movement orders use all six new takes from `public/audio/voices/harvester/orders/move-order-01.mp3` through `move-order-06.mp3`. Each group avoids immediate repeats; selection and movement share one speech channel.
 
 Seven background tracks play in order and repeat the playlist, starting with your first action. The **FIELD RADIO** panel offers Play/Pause, Next, volume, and song selection. Music defaults to 25% volume and pauses in hidden tabs. Named assets live in `public/audio/music/`; see [game audio](docs/audio.md) for titles, source mappings, and playback behavior.
 
@@ -94,7 +99,7 @@ src/game/               Pure TypeScript gameplay; no React, Three.js, or Zustand
   economy/              Resource balances and reservable refinery receiver
   core/                 Bounded 20 Hz fixed-step clock
 src/app/                Browser scheduling, runtime ownership, low-frequency Zustand bridge
-src/audio/              Independent music and selection-voice channels
+src/audio/              Independent music and grouped harvester speech
 src/rendering/          R3F scene, GLB instances, interpolation, camera, visual effects
 src/ui/                 DOM HUD, selection information, minimap, developer controls
 docs/                   Specification, architecture, asset workflow, validation evidence

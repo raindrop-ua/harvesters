@@ -56,7 +56,11 @@ export function HUD() {
       if (event.code === 'KeyP')
         game.ui.setState((s) => ({ showPaths: !s.showPaths }))
       if (event.code === 'Escape')
-        game.ui.setState({ selectedId: null, developerOpen: false })
+        game.ui.setState({
+          selectedId: null,
+          developerOpen: false,
+          moveFeedback: null,
+        })
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
@@ -196,7 +200,9 @@ export function HUD() {
                 <button
                   className="icon-button small"
                   aria-label="Deselect harvester"
-                  onClick={() => game.ui.setState({ selectedId: null })}
+                  onClick={() =>
+                    game.ui.setState({ selectedId: null, moveFeedback: null })
+                  }
                 >
                   <Icon name="close" size={15} />
                 </button>
@@ -262,6 +268,9 @@ export function HUD() {
                   <Icon name="return" size={15} />
                 </button>
               </div>
+              <p className="move-order-hint">
+                LEFT CLICK TO MOVE · ESC TO DESELECT
+              </p>
             </section>
           ) : (
             <button
