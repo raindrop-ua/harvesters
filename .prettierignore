@@ -1,0 +1,8 @@
+node_modules
+dist
+package-lock.json
+src/game/data/terrain.json
+assets/blender
+public/models
+artifacts
+.playwright-mcp

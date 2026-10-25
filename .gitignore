@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+*.blend1
+*.tsbuildinfo
+artifacts/
+.playwright-mcp/
+.idea/
