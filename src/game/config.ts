@@ -4,7 +4,7 @@ export const config = {
   harvester: {
     capacity: 120,
     harvestRate: 16,
-    unloadRate: 40,
+    unloadRate: 20,
     speed: 5.2,
     acceleration: 5,
     turnSpeed: 2.8,
@@ -12,6 +12,10 @@ export const config = {
     minimumHarvestDistance: 4.2,
     dockingTime: 0.8,
     retryInterval: 2,
+    unitSeparation: 6.4,
+    dockingPositionTolerance: 0.08,
+    dockingAngleTolerance: 0.025,
+    busyDepositPenalty: 18,
   },
   camera: {
     elevation: 55,

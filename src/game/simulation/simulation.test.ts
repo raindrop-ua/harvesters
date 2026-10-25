@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { config } from '../config'
 import { Simulation } from './Simulation'
-import { World } from './World'
+import { World, layout } from './World'
 import { FixedLoop } from '../core/FixedLoop'
 import { Refinery } from '../economy/Economy'
 import type { HarvesterState } from '../types'
 
 const dt = 1 / config.tickRate
+const singleSimulation = () =>
+  new Simulation(new World(undefined, layout.harvesters.slice(0, 1)))
 function until(
   sim: Simulation,
   predicate: () => boolean,
@@ -14,34 +16,34 @@ function until(
 ): Set<HarvesterState> {
   const states = new Set<HarvesterState>()
   for (let i = 0; i < seconds / dt && !predicate(); i++) {
-    states.add(sim.world.unit.state)
+    states.add(sim.world.units[0].state)
     sim.step(dt)
   }
   expect(
     predicate(),
-    `timed out in ${sim.world.unit.state}: ${sim.world.unit.message}`,
+    `timed out in ${sim.world.units[0].state}: ${sim.world.units[0].message}`,
   ).toBe(true)
   return states
 }
 
 describe('autonomous harvesting', () => {
   it('eventually extracts the entire finite map and idles with no resources lost', () => {
-    const sim = new Simulation(),
+    const sim = singleSimulation(),
       w = sim.world
     const total = w.deposits.reduce((sum, d) => sum + d.amount, 0)
     until(
       sim,
       () =>
         w.deposits.every((d) => d.amount === 0) &&
-        w.unit.cargo === 0 &&
-        w.unit.state === 'IDLE',
+        w.units[0].cargo === 0 &&
+        w.units[0].state === 'IDLE',
       1800,
     )
     expect(w.economy.balances.mineral).toBeCloseTo(total)
     expect(w.extracted).toBeCloseTo(total)
   })
   it('completes repeated cycles and conserves all minerals', () => {
-    const sim = new Simulation(),
+    const sim = singleSimulation(),
       w = sim.world
     const total = w.deposits.reduce((sum, d) => sum + d.amount, 0)
     const states = until(sim, () => w.deliveries >= 3)
@@ -58,28 +60,30 @@ describe('autonomous harvesting', () => {
     expect(w.economy.balances.mineral).toBeCloseTo(w.settings.capacity * 3)
     expect(
       w.deposits.reduce((sum, d) => sum + d.amount, 0) +
-        w.unit.cargo +
+        w.units[0].cargo +
         w.economy.balances.mineral,
     ).toBeCloseTo(total)
   })
   it('respects capacity and never crosses a blocked cell during its full cycle', () => {
-    const sim = new Simulation(),
+    const sim = singleSimulation(),
       w = sim.world
     let maximum = 0
     for (let i = 0; i < 2400; i++) {
       sim.step(dt)
-      maximum = Math.max(maximum, w.unit.cargo)
-      expect(w.unit.cargo).toBeGreaterThanOrEqual(0)
-      expect(w.unit.cargo).toBeLessThanOrEqual(w.unit.capacity + 1e-8)
-      expect(w.grid.isWalkable(w.grid.worldToGrid(w.unit.position))).toBe(true)
-      expect(w.unit.position.y).toBeCloseTo(
-        w.grid.heightAt(w.unit.position.x, w.unit.position.z),
+      maximum = Math.max(maximum, w.units[0].cargo)
+      expect(w.units[0].cargo).toBeGreaterThanOrEqual(0)
+      expect(w.units[0].cargo).toBeLessThanOrEqual(w.units[0].capacity + 1e-8)
+      expect(w.grid.isWalkable(w.grid.worldToGrid(w.units[0].position))).toBe(
+        true,
+      )
+      expect(w.units[0].position.y).toBeCloseTo(
+        w.grid.heightAt(w.units[0].position.x, w.units[0].position.z),
       )
     }
-    expect(maximum).toBeCloseTo(w.unit.capacity)
+    expect(maximum).toBeCloseTo(w.units[0].capacity)
   })
   it('depletes a partial load, releases occupancy, and returns every last mineral', () => {
-    const sim = new Simulation(),
+    const sim = singleSimulation(),
       w = sim.world
     for (const d of w.deposits) {
       d.amount = 0
@@ -91,19 +95,19 @@ describe('autonomous harvesting', () => {
     expect(w.economy.balances.mineral).toBeCloseTo(17.5)
     expect(d.amount).toBe(0)
     expect(w.grid.get(d.cell)?.occupiedBy).toBeUndefined()
-    until(sim, () => w.unit.state === 'IDLE')
-    expect(w.unit.message).toContain('depleted')
+    until(sim, () => w.units[0].state === 'IDLE')
+    expect(w.units[0].message).toContain('depleted')
   })
   it('waits safely when there are no available resources', () => {
-    const sim = new Simulation()
+    const sim = singleSimulation()
     for (const d of sim.world.deposits) d.amount = 0
     for (let i = 0; i < 400; i++) sim.step(dt)
     expect(sim.world.economy.balances.mineral).toBe(0)
-    expect(sim.world.unit.state).toBe('IDLE')
-    expect(sim.world.unit.path).toEqual([])
+    expect(sim.world.units[0].state).toBe('IDLE')
+    expect(sim.world.units[0].path).toEqual([])
   })
   it('bounds retries when every deposit is unreachable', () => {
-    const sim = new Simulation(),
+    const sim = singleSimulation(),
       w = sim.world
     for (const deposit of w.deposits)
       w.grid.occupy(
@@ -115,60 +119,60 @@ describe('autonomous harvesting', () => {
       )
     sim.step(dt)
     sim.step(dt)
-    expect(w.unit.state).toBe('IDLE')
-    const retry = w.unit.retryAt
+    expect(w.units[0].state).toBe('IDLE')
+    const retry = w.units[0].retryAt
     for (let i = 0; i < 20; i++) sim.step(dt)
-    expect(w.unit.retryAt).toBe(retry)
-    expect(w.unit.message).toContain('reachable')
+    expect(w.units[0].retryAt).toBe(retry)
+    expect(w.units[0].message).toContain('reachable')
   })
   it('retains cargo if the refinery is missing and resumes when it returns', () => {
-    const sim = new Simulation(),
+    const sim = singleSimulation(),
       w = sim.world
-    w.unit.cargo = 45
+    w.units[0].cargo = 45
     const refinery = w.refinery
     w.refinery = undefined
     for (let i = 0; i < 100; i++) sim.step(dt)
-    expect(w.unit.cargo).toBe(45)
-    expect(w.unit.message).toContain('No refinery')
+    expect(w.units[0].cargo).toBe(45)
+    expect(w.units[0].message).toContain('No refinery')
     w.refinery = refinery
     until(sim, () => w.deliveries === 1)
     expect(w.economy.balances.mineral).toBeCloseTo(45)
   })
   it('retains cargo at a blocked dock and recovers without teleporting', () => {
-    const sim = new Simulation(),
+    const sim = singleSimulation(),
       w = sim.world
-    w.unit.cargo = 32
+    w.units[0].cargo = 32
     const dock = w.refinery!.dock
     w.grid.occupy(dock, 1, 1, 'dock-obstruction', 'rock')
     for (let i = 0; i < 100; i++) sim.step(dt)
-    expect(w.unit.cargo).toBe(32)
-    expect(w.unit.message).toContain('Dock unreachable')
+    expect(w.units[0].cargo).toBe(32)
+    expect(w.units[0].message).toContain('Dock unreachable')
     w.grid.release('dock-obstruction')
     until(sim, () => w.deliveries === 1)
     expect(w.economy.balances.mineral).toBeCloseTo(32)
   })
   it('replans an invalidated route and handles refinery removal during travel', () => {
-    const sim = new Simulation(),
+    const sim = singleSimulation(),
       w = sim.world
-    until(sim, () => w.unit.state === 'MOVE_TO_RESOURCE')
-    const next = w.unit.path[w.unit.pathIndex]
+    until(sim, () => w.units[0].state === 'MOVE_TO_RESOURCE')
+    const next = w.units[0].path[w.units[0].pathIndex]
     w.grid.occupy(next, 1, 1, 'new-rock', 'rock')
     sim.step(dt)
-    expect(w.unit.state).toBe('FIND_RESOURCE')
+    expect(w.units[0].state).toBe('FIND_RESOURCE')
     w.grid.release('new-rock')
-    until(sim, () => w.unit.state === 'MOVE_TO_REFINERY')
-    const cargo = w.unit.cargo
+    until(sim, () => w.units[0].state === 'MOVE_TO_REFINERY')
+    const cargo = w.units[0].cargo
     w.refinery = undefined
     sim.step(dt)
-    expect(w.unit.state).toBe('IDLE')
-    expect(w.unit.cargo).toBe(cargo)
+    expect(w.units[0].state).toBe('IDLE')
+    expect(w.units[0].cargo).toBe(cargo)
   })
 })
 
 describe('commands and docking contracts', () => {
   it('validates commands, executes at tick boundaries, and makes a real move', () => {
-    const sim = new Simulation(),
-      u = sim.world.unit
+    const sim = singleSimulation(),
+      u = sim.world.units[0]
     expect(
       sim.commands.enqueue({ type: 'STOP', unitId: 'unknown' }).accepted,
     ).toBe(false)
@@ -208,9 +212,9 @@ describe('commands and docking contracts', () => {
     until(sim, () => u.state === 'HARVEST')
   })
   it('stops without losing cargo and supports explicit harvest / return orders', () => {
-    const sim = new Simulation(),
+    const sim = singleSimulation(),
       w = sim.world,
-      u = w.unit
+      u = w.units[0]
     sim.commands.enqueue({
       type: 'HARVEST',
       unitId: u.id,
@@ -233,21 +237,22 @@ describe('commands and docking contracts', () => {
   it('reserves a dock for one unit and releases it explicitly', () => {
     const w = new World(),
       receiver = w.refinery as Refinery
+    receiver.request('one')
+    receiver.request('two')
     expect(receiver.reserve('one')).toBe(true)
     expect(receiver.reserve('two')).toBe(false)
-    receiver.release('two')
     expect(receiver.canAccept('two')).toBe(false)
     receiver.release('one')
     expect(receiver.reserve('two')).toBe(true)
-    expect(receiver.receiveResources('mineral', -1)).toBe(0)
-    expect(receiver.receiveResources('mineral', Infinity)).toBe(0)
+    expect(receiver.receiveResources('two', 'mineral', -1)).toBe(0)
+    expect(receiver.receiveResources('two', 'mineral', Infinity)).toBe(0)
   })
 })
 
 describe('fixed-step clock', () => {
   it('produces identical simulation state at 30 and 144 rendering frames per second', () => {
     const run = (fps: number) => {
-      const sim = new Simulation(),
+      const sim = singleSimulation(),
         loop = new FixedLoop(sim)
       for (let i = 0; i < fps * 60; i++) loop.advance(1 / fps)
       return sim.world
@@ -255,12 +260,12 @@ describe('fixed-step clock', () => {
     const a = run(30),
       b = run(144)
     expect(a.time).toBeCloseTo(b.time)
-    expect(a.unit.position.x).toBeCloseTo(b.unit.position.x)
-    expect(a.unit.position.z).toBeCloseTo(b.unit.position.z)
+    expect(a.units[0].position.x).toBeCloseTo(b.units[0].position.x)
+    expect(a.units[0].position.z).toBeCloseTo(b.units[0].position.z)
     expect(a.economy.balances.mineral).toBeCloseTo(b.economy.balances.mineral)
   })
   it('caps catch-up work, ignores invalid time, and freezes when paused', () => {
-    const sim = new Simulation(),
+    const sim = singleSimulation(),
       loop = new FixedLoop(sim)
     loop.speed = 4
     loop.advance(10000)

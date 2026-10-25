@@ -100,7 +100,10 @@ export function DeveloperPanel() {
         <span>SIMULATION</span>
         <span>20 HZ / {state.view.fps} FPS</span>
         <span>STATE</span>
-        <span>{state.view.state}</span>
+        <span>
+          {state.view.units.find((u) => u.id === state.selectedId)?.state ??
+            'NO SELECTION'}
+        </span>
         <span>DEPOSITS</span>
         <span>{Math.ceil(state.view.remaining).toLocaleString('en-US')} M</span>
       </div>

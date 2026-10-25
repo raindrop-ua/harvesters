@@ -8,7 +8,7 @@
 | `assets/blender/refinery.blend`  | `public/models/refinery.glb`  | `ProcessingStructure`, `DockStatusLight`                                                                                                                    |
 | `assets/blender/terrain.blend`   | `public/models/terrain.glb`   | `DesertHeightfield`, `DesertHorizon`, `ScatteredPebbles`                                                                                                    |
 | `assets/blender/rocks.blend`     | `public/models/rocks.glb`     | `RockFormation`                                                                                                                                             |
-| `assets/blender/minerals.blend`  | `public/models/minerals.glb`  | `MineralCluster`                                                                                                                                            |
+| `assets/blender/minerals.blend`  | `public/models/minerals.glb`  | `Crystal00` … `Crystal06`                                                                                                                                   |
 | `assets/blender/effects.blend`   | `public/models/effects.glb`   | `DustParticle`, `ExtractionParticle`, `SelectionRing`                                                                                                       |
 
 `.blend` and `.glb` files belong in version control. Blender backup files (`.blend1`) do not. No imported commercial assets or textures are used. Materials are authored with a shared palette, matte roughness, restrained emission, and no image textures.
@@ -39,7 +39,7 @@ The script works without a GUI or external Python packages. If Blender is absent
 
 For static appearance changes, rendering code does not change. Adding or removing optional visual details is supported. Renaming a node used by animation requires updating that node reference in rendering; the asset check protects the required harvester structure.
 
-You may also export manually using glTF 2.0 → GLB, +Y up, apply modifiers, no cameras or lights, then optimize with `npm run assets:optimize`. Keep separate animation nodes. Avoid joining the entire vehicle into one mesh.
+You may also export manually using glTF 2.0 → GLB, +Y up, apply modifiers, no cameras or lights, then optimize with `npm run assets:optimize`. Keep separate animation nodes and all seven ground-pivoted crystal objects for staged depletion. Avoid joining the entire vehicle into one mesh.
 
 ## Units and pivots
 

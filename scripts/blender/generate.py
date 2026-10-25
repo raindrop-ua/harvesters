@@ -8,6 +8,7 @@ import bpy
 import json
 import math
 import random
+import sys
 from pathlib import Path
 from mathutils import Vector
 
@@ -213,16 +214,16 @@ def refinery():
         block("Dark roof rim", (-1.9, 5.48, -0.7), (6.85, 0.3, 7.15), m["dark"], 0.12),
         block("Roof slab", (-1.9, 5.7, -0.7), (6.65, 0.3, 6.95), m["light"], 0.16),
         block("Roof faction band", (-3.8, 5.87, -0.7), (0.85, 0.04, 6.8), m["orange"], 0.02),
-        block("Dock entrance / dark recess", (-1.6, 1.9, 2.79), (3.9, 3.1, 0.13), m["dark"], 0.15),
-        block("Dock lintel", (-1.6, 3.58, 3.01), (4.5, 0.5, 0.55), m["orange"], 0.08),
-        block("Dock canopy", (-1.6, 4.02, 3.6), (4.7, 0.25, 2.2), m["light"], 0.12),
-        block("Dock apron", (0.9, 0.12, 6.2), (4.5, 0.24, 3.4), m["dark"], 0.12),
+        block("Dock entrance / dark recess", (-1.0, 1.9, 2.79), (3.9, 3.1, 0.13), m["dark"], 0.15),
+        block("Dock lintel", (-1.0, 3.58, 3.01), (4.5, 0.5, 0.55), m["orange"], 0.08),
+        block("Dock canopy", (-1.0, 4.02, 3.6), (4.7, 0.25, 2.2), m["light"], 0.12),
+        block("Dock apron", (-1.0, 0.12, 6.2), (4.5, 0.24, 3.4), m["dark"], 0.12),
     ]
-    # Apron lives outside the occupied footprint. Runtime dock is 10 units forward.
-    for x in (-1.25, 3.05):
+    # Apron and entrance share runtime X=-17; the vehicle faces -Z at the dock.
+    for x in (-3.15, 1.15):
         static.append(block("Dock guide rail", (x, 0.29, 6.2), (0.12, 0.16, 3.2), m["lamp"], 0.025))
     for z in (4.9, 5.65, 6.4, 7.15):
-        static.append(block("Apron guide marking", (0.9, 0.25, z), (0.38, 0.035, 0.3), m["light"], 0.01))
+        static.append(block("Apron guide marking", (-1.0, 0.25, z), (0.38, 0.035, 0.3), m["light"], 0.01))
     for x in (-4.6, 0.9):
         static.append(block("Hall rib", (x, 2.8, 2.9), (0.3, 4.6, 0.35), m["light"], 0.06))
     for z in (-2.8, 0.5):
@@ -239,7 +240,7 @@ def refinery():
         static.append(block("Roof heat exchanger", (-0.8, 6.05, z), (2.4, 0.3, 0.22), m["steel"], 0.06))
     static.append(label("K—01", (-1.2, 5.88, 1.5), 0.9, m["dark"]))
     join_group("ProcessingStructure", static)
-    lamp = block("DockStatusLight", (-1.6, 3.6, 3.31), (1.3, 0.13, 0.08), m["cyan"], 0.02)
+    lamp = block("DockStatusLight", (-1.0, 3.6, 3.31), (1.3, 0.13, 0.08), m["cyan"], 0.02)
     export("refinery")
 
 
@@ -268,7 +269,10 @@ def minerals():
         for j, face in enumerate(obj.data.polygons):
             face.material_index = [0, 2, 0, 1, 1, 0][j % 6]
         cluster.append(obj)
-    join_group("MineralCluster", cluster)
+    # Preserve individual, ground-pivoted prisms for staged depletion.
+    for i, obj in enumerate(cluster):
+        obj.name = "Crystal%02d" % i
+    # Geometry vertices already use ground-level origins; Y scaling sinks no tips.
     export("minerals")
 
 
@@ -385,10 +389,8 @@ def effects():
     export("effects")
 
 
-harvester()
-refinery()
-minerals()
-rocks()
-terrain()
-effects()
+generators = {"harvester": harvester, "refinery": refinery, "minerals": minerals, "rocks": rocks, "terrain": terrain, "effects": effects}
+names = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else list(generators)
+for name in names:
+    generators[name]()
 print("HARVESTER: all Blender sources, GLBs and shared terrain metadata generated.")

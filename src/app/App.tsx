@@ -10,6 +10,7 @@ import {
 import { GameContext } from './GameContext'
 import { GameRuntime } from './runtime'
 import { HUD } from '../ui/HUD'
+import { WorldLabels } from '../ui/WorldLabels'
 
 const GameScene = lazy(() => import('../rendering/GameScene'))
 
@@ -59,6 +60,7 @@ export function App() {
             <GameScene />
           </Suspense>
         </SceneBoundary>
+        <WorldLabels />
         <HUD />
       </main>
     </GameContext.Provider>

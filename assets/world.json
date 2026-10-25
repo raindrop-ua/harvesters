@@ -7,9 +7,19 @@
     "z": 26,
     "width": 6,
     "depth": 5,
-    "dock": { "x": 24, "z": 33 }
+    "dock": { "x": 23, "z": 31 },
+    "entry": { "x": 23, "z": 34 },
+    "exit": { "x": 27, "z": 34 },
+    "heading": 3.141592653589793,
+    "waitingSlots": [
+      { "x": 19, "z": 35 },
+      { "x": 27, "z": 38 }
+    ]
   },
-  "harvester": { "x": 24, "z": 34 },
+  "harvesters": [
+    { "id": "harvester-01", "x": 22, "z": 35 },
+    { "id": "harvester-02", "x": 27, "z": 35 }
+  ],
   "deposits": [
     { "id": "mineral-01", "x": 36, "z": 30, "amount": 600, "scale": 1.1 },
     { "id": "mineral-02", "x": 41, "z": 37, "amount": 840, "scale": 1.3 },

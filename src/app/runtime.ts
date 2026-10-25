@@ -2,7 +2,7 @@ import { createStore } from 'zustand/vanilla'
 import { config } from '../game/config'
 import { FixedLoop } from '../game/core/FixedLoop'
 import { Simulation } from '../game/simulation/Simulation'
-import type { GridPosition, HarvesterState } from '../game/types'
+import type { EntityId, GridPosition, HarvesterState } from '../game/types'
 
 export interface PostProcessingSettings {
   enabled: boolean
@@ -10,23 +10,31 @@ export interface PostProcessingSettings {
   chromaticAberrationIntensity: number
   vignetteIntensity: number
 }
-export interface ViewSnapshot {
-  time: number
-  balance: number
+export interface UnitView {
+  id: EntityId
   cargo: number
   capacity: number
   state: HarvesterState
   message: string
-  deliveries: number
   position: GridPosition
   path: GridPosition[]
+  deliveries: number
+}
+export interface ViewSnapshot {
+  time: number
+  balance: number
+  deliveries: number
+  units: UnitView[]
+  dockOwner?: EntityId
+  queue: EntityId[]
+  deposits: { id: EntityId; fraction: number; amount: number }[]
   remaining: number
   fps: number
   gridRevision: number
 }
 export interface UIState {
   ready: boolean
-  selected: boolean
+  selectedId: EntityId | null
   developerOpen: boolean
   showGrid: boolean
   showPaths: boolean
@@ -39,11 +47,12 @@ export interface UIState {
 
 /** Owns browser scheduling and the low-frequency UI bridge; never owned by the canvas. */
 export class GameRuntime {
+  readonly labelElements = new Map<EntityId, HTMLDivElement>()
   readonly simulation = new Simulation()
   readonly loop = new FixedLoop(this.simulation)
   readonly ui = createStore<UIState>(() => ({
     ready: false,
-    selected: true,
+    selectedId: this.world.units[0].id,
     developerOpen: false,
     showGrid: false,
     showPaths: false,
@@ -56,26 +65,34 @@ export class GameRuntime {
   get world() {
     return this.simulation.world
   }
-
   private snapshot(fps: number): ViewSnapshot {
-    const w = this.world,
-      u = w.unit
+    const w = this.world
     return {
       time: w.time,
       balance: w.economy.balances.mineral,
-      cargo: u.cargo,
-      capacity: u.capacity,
-      state: u.state,
-      message: u.message,
       deliveries: w.deliveries,
-      position: { x: u.position.x, z: u.position.z },
-      path: u.path.slice(u.pathIndex),
+      units: w.units.map((u) => ({
+        id: u.id,
+        cargo: u.cargo,
+        capacity: u.capacity,
+        state: u.state,
+        message: u.message,
+        position: { x: u.position.x, z: u.position.z },
+        path: u.path.slice(u.pathIndex),
+        deliveries: u.deliveries,
+      })),
+      dockOwner: w.refinery?.reservedBy,
+      queue: [...(w.refinery?.queue ?? [])],
+      deposits: w.deposits.map((d) => ({
+        id: d.id,
+        fraction: d.amount / d.initialAmount,
+        amount: d.amount,
+      })),
       remaining: w.deposits.reduce((sum, d) => sum + d.amount, 0),
       fps,
       gridRevision: w.grid.revision,
     }
   }
-
   start(): () => void {
     let raf = 0,
       last = performance.now(),
@@ -103,16 +120,22 @@ export class GameRuntime {
     raf = requestAnimationFrame(frame)
     return () => cancelAnimationFrame(raf)
   }
-
-  focusUnit(): void {
-    const { x, z } = this.world.unit.position
+  focusUnit(
+    id = this.ui.getState().selectedId ?? this.world.units[0].id,
+  ): void {
+    const u = this.world.units.find((unit) => unit.id === id)
+    if (!u) return
     this.ui.setState((s) => ({
-      selected: true,
-      focus: { x, z, revision: s.focus.revision + 1 },
+      selectedId: id,
+      focus: {
+        x: u.position.x,
+        z: u.position.z,
+        revision: s.focus.revision + 1,
+      },
     }))
   }
-
   command(type: 'STOP' | 'AUTO' | 'RETURN_CARGO'): void {
-    this.simulation.commands.enqueue({ type, unitId: this.world.unit.id })
+    const unitId = this.ui.getState().selectedId
+    if (unitId) this.simulation.commands.enqueue({ type, unitId })
   }
 }

@@ -13,9 +13,13 @@ export type HarvesterState =
   | 'MOVE_TO_RESOURCE'
   | 'HARVEST'
   | 'CARGO_FULL'
+  | 'MOVE_TO_QUEUE'
+  | 'WAIT_FOR_DOCK'
   | 'MOVE_TO_REFINERY'
   | 'DOCK'
   | 'UNLOAD'
+  | 'UNDOCK'
+  | 'LEAVE_REFINERY'
   | 'MOVE'
   | 'STOPPED'
 
@@ -37,6 +41,8 @@ export interface Harvester {
   autonomous: boolean
   retryAt: number
   message: string
+  blockedTime: number
+  deliveries: number
 }
 
 export interface Deposit {
@@ -52,11 +58,20 @@ export interface Deposit {
 export interface ResourceReceiver {
   id: EntityId
   dock: GridPosition
+  entry: GridPosition
+  exit: GridPosition
+  heading: number
+  queue: readonly EntityId[]
   reservedBy?: EntityId
+  request(
+    unitId: EntityId,
+    canUse?: (slot: GridPosition) => boolean,
+  ): GridPosition | undefined
+  queuePosition(unitId: EntityId): number
   canAccept(unitId: EntityId): boolean
   reserve(unitId: EntityId): boolean
   release(unitId: EntityId): void
-  receiveResources(type: ResourceType, amount: number): number
+  receiveResources(unitId: EntityId, type: ResourceType, amount: number): number
 }
 
 export type UnitCommand =

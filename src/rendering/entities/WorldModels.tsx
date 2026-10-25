@@ -6,8 +6,9 @@ import { Group, MathUtils } from 'three'
 import { useGame, useUI } from '../../app/GameContext'
 import { layout } from '../../game/simulation/World'
 import { angleDelta } from '../../game/simulation/Simulation'
-import type { Deposit } from '../../game/types'
+import type { Deposit, Harvester } from '../../game/types'
 import { useModel } from '../models'
+import { crystalStage } from './mineralVisuals'
 
 export function TerrainModel() {
   const model = useModel('terrain')
@@ -32,23 +33,28 @@ export function RockModel({ index }: { index: number }) {
 export function MineralModel({ deposit }: { deposit: Deposit }) {
   const game = useGame(),
     model = useModel('minerals')
-  const group = useRef<Group>(null)
+  const crystals = useMemo(
+    () =>
+      model.children
+        .filter((child) => child.name.startsWith('Crystal'))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [model],
+  )
   const p = game.world.grid.gridToWorld(deposit.cell)
   useFrame(() => {
-    if (!group.current) return
-    group.current.visible = deposit.amount > 0
-    group.current.scale.setScalar(
-      deposit.scale *
-        (0.3 + 0.7 * Math.sqrt(deposit.amount / deposit.initialAmount)),
-    )
+    const amount = deposit.amount / deposit.initialAmount
+    for (let i = 0; i < crystals.length; i++) {
+      const stage = crystalStage(amount, i, crystals.length)
+      crystals[i].visible = stage.visible
+      crystals[i].scale.y = stage.scale
+    }
+    model.scale.setScalar(deposit.scale * (0.55 + 0.45 * Math.sqrt(amount)))
   })
   return (
-    <group
-      ref={group}
-      position={[p.x, p.y, p.z]}
-      rotation-y={deposit.cell.x * 1.7}
-    >
-      <primitive object={model} dispose={null} />
+    <group position={[p.x, p.y, p.z]}>
+      <group rotation-y={deposit.cell.x * 1.7}>
+        <primitive object={model} dispose={null} />
+      </group>
     </group>
   )
 }
@@ -60,7 +66,7 @@ export function RefineryModel() {
   const lamp = model.getObjectByName('DockStatusLight')
   useFrame(({ clock }) => {
     if (lamp) {
-      const unloading = game.world.unit.state === 'UNLOAD'
+      const unloading = game.world.units.some((u) => u.state === 'UNLOAD')
       lamp.scale.x = unloading ? 1 + Math.sin(clock.elapsedTime * 8) * 0.15 : 1
       lamp.visible = !unloading || Math.sin(clock.elapsedTime * 8) > -0.2
     }
@@ -68,11 +74,11 @@ export function RefineryModel() {
   return <primitive object={model} dispose={null} position={[p.x, p.y, p.z]} />
 }
 
-export function HarvesterModel() {
+export function HarvesterModel({ unit }: { unit: Harvester }) {
   const game = useGame(),
     model = useModel('harvester'),
     effects = useModel('effects')
-  const selected = useUI((s) => s.selected)
+  const selected = useUI((s) => s.selectedId === unit.id)
   const group = useRef<Group>(null),
     selection = useRef<Group>(null)
   const [hovered, setHovered] = useState(false)
@@ -88,7 +94,7 @@ export function HarvesterModel() {
   const rightTreads = model.getObjectByName('RightTrackTreads')
 
   useFrame((_, delta) => {
-    const u = game.world.unit,
+    const u = unit,
       alpha = game.loop.alpha
     if (!group.current) return
     const x = MathUtils.lerp(u.previousPosition.x, u.position.x, alpha)
@@ -125,7 +131,7 @@ export function HarvesterModel() {
         ref={group}
         onClick={(event) => {
           event.stopPropagation()
-          game.ui.setState({ selected: true })
+          game.ui.setState({ selectedId: unit.id })
         }}
         onPointerOver={(event) => {
           event.stopPropagation()
