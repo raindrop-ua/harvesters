@@ -13,6 +13,7 @@ RUN --mount=type=cache,id=harvester-npm-cache,target=/root/.npm \
 COPY index.html tsconfig.json vite.config.ts ./
 COPY src ./src
 COPY public ./public
+COPY assets/world.json ./assets/world.json
 RUN npm run build
 
 # ---------- Runtime stage ----------
